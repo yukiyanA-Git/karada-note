@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>からだの違和感 - 40代からのからだメモ</title>
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json?v=4">
+  <meta name="theme-color" content="#588b73">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="からだの違和感">
+  <!-- Favicon / App Icon -->
+  <link rel="icon" type="image/jpeg" href="app-icon.jpg">
+  <link rel="apple-touch-icon" href="app-icon.jpg">
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5012440476019514" crossorigin="anonymous"></script>
+  <!-- Google Fonts: Zen Maru Gothic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Zen Maru Gothic"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f4f8f5',
+              100: '#e5efe8',
+              200: '#cddec2',
+              300: '#a6c6b4',
+              400: '#7ba992',
+              500: '#588b73',
+              600: '#43705c',
+              700: '#355849',
+              800: '#2c473c',
+              900: '#263b33',
+            },
+            warm: {
+              50: '#faf8f5',
+              100: '#f4efe8',
+              200: '#ebdcd0',
+              300: '#dec3af',
+              400: '#cea288',
+              500: '#be8566',
+              coral: '#df7a62',
+              amber: '#e69a47',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f7f5f0;
+      color: #3f4642;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #d8d3c8;
+      border-radius: 9999px;
+    }
+    .pill-active {
+      background-color: #588b73 !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(88, 139, 115, 0.25);
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans flex flex-col justify-between selection:bg-brand-200">
+
+  <!-- コンテナ（スマホ幅に最適化、PCでも見やすい中央寄せ） -->
+  <div class="w-full max-w-xl mx-auto flex-1 flex flex-col min-h-screen bg-[#faf8f5] shadow-lg border-x border-[#ede7dc]">
+    
+    <!-- ヘッダー -->
+    <header class="sticky top-0 z-30 bg-[#faf8f5]/95 backdrop-blur-md px-4 pt-3 pb-2 border-b border-[#ece6da]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <img src="app-icon.jpg" alt="アイコン" class="w-8 h-8 rounded-full object-cover shadow-2xs border border-stone-200 bg-white">
+          <div>
+            <h1 class="text-sm sm:text-base font-bold tracking-tight text-stone-800 leading-snug">からだの違和感ノート</h1>
+            <p class="text-[10px] text-stone-500 font-medium">40代からの不調メモ & まいにち記録</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-1.5">
+          <!-- クラウド同期ボタン -->
+          <button onclick="openSyncModal()" id="syncStatusBtn" 
+            class="text-[11px] font-bold px-2 py-1.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 transition flex items-center gap-1 shadow-2xs">
+            <span id="syncIcon">☁️</span> <span id="syncText">同期</span>
+          </button>
+
+          <!-- 医師提示モード切替 -->
+          <button id="doctorModeToggle" onclick="toggleDoctorMode()" 
+            class="text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-full border border-brand-400 text-brand-700 bg-brand-50 hover:bg-brand-100 transition flex items-center gap-1 shadow-2xs">
+            <span>🩺</span> <span id="doctorModeText">医師提示</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 医師提示モード案内バナー（モードON時のみ表示） -->
+      <div id="doctorBanner" class="hidden mt-2 p-2.5 bg-brand-600 text-white rounded-2xl shadow-md flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🩺</span>
+          <div>
+            <p class="font-bold text-xs sm:text-sm">お医者さん提示中（大文字・表表示）</p>
+            <p class="text-brand-100 text-[10px]">診察室でそのまま見せられる画面です</p>
+          </div>
+        </div>
+        <button onclick="toggleDoctorMode()" class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-xl text-xs font-bold">終了</button>
+      </div>
+    </header>
+
+    <!-- ナビゲーションタブ（4分割：①違和感メモ ②まいにち測定 ③じぶんのカルテ ④みんなのノート） -->
+    <nav class="bg-[#faf8f5] px-2 pt-1 pb-0.5 grid grid-cols-4 border-b border-[#ece6da] sticky top-[53px] z-20 text-center">
+      <!-- タブ1: ①の人用（3秒でサッとメモ） -->
+      <button onclick="switchTab('input')" id="tabBtnInput" 
+        class="py-2 text-[11px] sm:text-xs font-bold border-b-2 border-brand-500 text-brand-700 flex flex-col items-center justify-center gap-0.5 transition">
+        <span>✍️ 違和感メモ</span>
+        <span class="text-[9px] text-stone-400 font-normal">気になった時</span>
+      </button>
+
+      <!-- タブ2: ②の人用（血圧・体温・体重・薬の日課） -->
+      <button onclick="switchTab('vitals')" id="tabBtnVitals" 
+        class="py-2 text-[11px] sm:text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-800 flex flex-col items-center justify-center gap-0.5 transition">
+        <span class="flex items-center gap-0.5">
+          <span>📊 まいにち測定</span>
+        </span>
+        <span class="text-[9px] text-stone-400 font-normal">血圧・お薬・体温</span>
+      </button>
+
+      <!-- タブ3: じぶんのカルテ（お医者さん提示用・まとめ） -->
+      <button onclick="switchTab('myLogs')" id="tabBtnMyLogs" 
+        class="py-2 text-[11px] sm:text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-800 flex flex-col items-center justify-center gap-0.5 transition">
+        <span class="flex items-center gap-0.5">
+          <span>📋 カルテ</span>
+          <span id="myLogBadge" class="bg-brand-100 text-brand-700 text-[10px] px-1 py-0.1 rounded-full font-bold">0</span>
+        </span>
+        <span class="text-[9px] text-stone-400 font-normal">受診・履歴</span>
+      </button>
+
+      <!-- タブ4: 匿名コミュニティ -->
+      <button onclick="switchTab('community')" id="tabBtnCommunity" 
+        class="py-2 text-[11px] sm:text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-800 flex flex-col items-center justify-center gap-0.5 transition">
+        <span class="flex items-center gap-0.5">
+          <span>👥 みんなのノート</span>
+        </span>
+        <span class="text-[9px] text-warm-amber font-medium">匿名共有</span>
+      </button>
+    </nav>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="flex-1 p-3.5 pb-20 overflow-y-auto custom-scroll">
+
+      <!-- ============================================== -->
+      <!-- TAB 1: ✍️ 違和感メモ (①の人用：トップで3秒記録) -->
+      <!-- ============================================== -->
+      <section id="tabInput" class="space-y-3.5">
+        <!-- 導入メッセージカード -->
+        <div class="bg-white/90 rounded-2xl p-3 border border-[#ece4d6] text-xs text-stone-600 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="text-xl">☕</div>
+            <div>
+              <p class="font-bold text-stone-700">「気のせいかな？」と感じた違和感をサッと。</p>
+              <p class="text-stone-500 mt-0.5 text-[11px]">病院に行くほどではない小さな変化も、日時と一緒に残せます。</p>
+            </div>
+          </div>
+        </div>
+
+        <form id="memoForm" onsubmit="handleSaveMemo(event)" class="space-y-3.5">
+          
+          <!-- 1. 気になる部位（複数または単一選択） -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
+            <label class="block text-xs font-bold text-stone-700 flex items-center justify-between">
+              <span class="flex items-center gap-1">📍 どこに違和感がありますか？ <span class="text-warm-coral text-xs">*必須</span></span>
+              <span id="selectedPartLabel" class="text-xs text-brand-600 font-medium">選択してください</span>
+            </label>
+            <div class="grid grid-cols-3 gap-2" id="bodyPartContainer">
+              <!-- JSで部位ボタンを動的生成 -->
+            </div>
+
+            <!-- 「その他」を選択したときの詳細入力欄 -->
+            <div id="otherPartInputWrapper" class="hidden pt-2 border-t border-stone-100 transition-all">
+              <label class="block text-[11px] font-bold text-stone-700 mb-1">
+                ✏️ 具体的にどのあたりですか？（自由に入力）
+              </label>
+              <input type="text" id="otherPartInput" placeholder="例：右足の親指の付け根、喉の奥、右の肋骨あたり など"
+                class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400">
+            </div>
+          </div>
+
+          <!-- 2. 日時の記録（今 or 過去） -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-stone-700 flex items-center gap-1">
+                🕒 いつ頃の違和感ですか？
+              </label>
+              <button type="button" onclick="setDateTimeToNow()" class="text-[11px] text-brand-600 hover:underline">
+                現在日時に戻す
+              </button>
+            </div>
+            
+            <!-- かんたん過去日時クイックボタン -->
+            <div class="flex flex-wrap gap-1.5 text-xs">
+              <button type="button" onclick="setQuickDate(0, '今')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">今すぐ</button>
+              <button type="button" onclick="setQuickDate(0, '昼')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">今日の昼頃</button>
+              <button type="button" onclick="setQuickDate(0, '朝')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">今朝（起床時）</button>
+              <button type="button" onclick="setQuickDate(-1, '夜')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">昨日の夜</button>
+              <button type="button" onclick="setQuickDate(-2, '昼')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">2日前</button>
+              <button type="button" onclick="setQuickDate(-3, '昼')" class="quick-date-btn px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700">3日前</button>
+            </div>
+
+            <!-- 具体的な日時入力（過去も自由に変更可能） -->
+            <div class="pt-1">
+              <input type="datetime-local" id="memoDatetime" required
+                class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              <p class="text-[10px] text-stone-400 mt-1">※ 過去の日時もカレンダーから自由に変更・記録できます。</p>
+            </div>
+          </div>
+
+          <!-- 3. どんな違和感・状況？（クイック表現＋自由メモ） -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
+            <label class="block text-xs font-bold text-stone-700 flex items-center justify-between">
+              <span>💭 どんな感覚ですか？（オノマトペ・状況）</span>
+            </label>
+            
+            <!-- 違和感クイックタグ -->
+            <div class="flex flex-wrap gap-1.5 text-xs text-stone-600">
+              <button type="button" onclick="appendTag('ズキズキする')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># ズキズキ</button>
+              <button type="button" onclick="appendTag('重だるい・張る')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># 重だるい</button>
+              <button type="button" onclick="appendTag('ピキッと痛みが走った')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># ピキッとした</button>
+              <button type="button" onclick="appendTag('チクチクする')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># チクチク</button>
+              <button type="button" onclick="appendTag('動かすと違和感')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># 動かすと違和感</button>
+              <button type="button" onclick="appendTag('朝起きたときが辛い')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># 起床時</button>
+              <button type="button" onclick="appendTag('夕方・疲れが出ると出る')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># 夕方・疲れ</button>
+              <button type="button" onclick="appendTag('天気が崩れる前')" class="tag-btn px-2.5 py-1 bg-stone-100 hover:bg-brand-50 rounded-lg border border-stone-200"># 天気・気圧</button>
+            </div>
+
+            <textarea id="memoContent" rows="3" placeholder="例：デスクワーク中に右のこめかみが脈打つように重い。首の付け根も張っている感じ。寝不足気味。"
+              class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-200 rounded-2xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none leading-relaxed"></textarea>
+          </div>
+
+          <!-- 4. 気になる度合い（3段階） -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2">
+            <label class="block text-xs font-bold text-stone-700">
+              📊 今の気になり具合
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="severity" value="1" checked class="peer sr-only">
+                <div class="p-2.5 text-center rounded-2xl border border-stone-200 bg-stone-50 peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-800 transition">
+                  <div class="text-base">🙂</div>
+                  <div class="text-xs font-bold mt-1">ほんのり違和感</div>
+                  <div class="text-[10px] text-stone-400">気のせいかも程度</div>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="severity" value="2" class="peer sr-only">
+                <div class="p-2.5 text-center rounded-2xl border border-stone-200 bg-stone-50 peer-checked:bg-amber-50 peer-checked:border-amber-500 peer-checked:text-amber-800 transition">
+                  <div class="text-base">😐</div>
+                  <div class="text-xs font-bold mt-1">気になる</div>
+                  <div class="text-[10px] text-stone-400">意識がいってしまう</div>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="severity" value="3" class="peer sr-only">
+                <div class="p-2.5 text-center rounded-2xl border border-stone-200 bg-stone-50 peer-checked:bg-rose-50 peer-checked:border-rose-400 peer-checked:text-rose-800 transition">
+                  <div class="text-base">😣</div>
+                  <div class="text-xs font-bold mt-1">つらい・痛む</div>
+                  <div class="text-[10px] text-stone-400">日常生活に影響</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 5. 都道府県 ＆ 公開設定 -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-3">
+            <!-- 都道府県（地域情報：任意） -->
+            <div class="flex items-center justify-between pb-2.5 border-b border-stone-100">
+              <label class="text-xs font-bold text-stone-700 flex items-center gap-1">
+                <span>🗾 お住まいの地域（都道府県）</span>
+                <span class="text-[10px] font-normal text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">任意</span>
+              </label>
+              <select id="userPrefecture" onchange="savePrefecturePref(this.value)"
+                class="px-2.5 py-1 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-400">
+                <option value="">未設定</option>
+                <!-- 都道府県をJSで挿入 -->
+              </select>
+            </div>
+
+            <label class="block text-xs font-bold text-stone-700 pt-0.5">
+              🌐 公開設定
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="isPublic" value="false" checked class="peer sr-only">
+                <div class="p-3 text-left rounded-2xl border border-stone-200 bg-stone-50 peer-checked:bg-stone-100 peer-checked:border-stone-500 peer-checked:text-stone-800 transition flex items-start gap-2">
+                  <span class="text-base">🔒</span>
+                  <div>
+                    <div class="text-xs font-bold">自分のみ（非公開）</div>
+                    <div class="text-[10px] text-stone-500">お医者さんに見せる用</div>
+                  </div>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="isPublic" value="true" class="peer sr-only">
+                <div class="p-3 text-left rounded-2xl border border-stone-200 bg-stone-50 peer-checked:bg-warm-50 peer-checked:border-warm-amber peer-checked:text-stone-800 transition flex items-start gap-2">
+                  <span class="text-base">👥</span>
+                  <div>
+                    <div class="text-xs font-bold">匿名で共有する</div>
+                    <div class="text-[10px] text-stone-500">地域＋匿名で誰かの参考に</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 送信ボタン -->
+          <button type="submit" 
+            class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold rounded-2xl shadow-md shadow-brand-500/20 text-sm transition flex items-center justify-center gap-2">
+            <span>🌱</span><span>この違和感をメモする</span>
+          </button>
+        </form>
+
+        <!-- Google AdSense 広告枠（トップページ最下部：控えめなアクリル枠） -->
+        <div id="topAdArea" class="pt-2">
+          <div class="p-3 bg-stone-100/80 border border-stone-200/80 rounded-3xl text-center shadow-2xs backdrop-blur-sm">
+            <span class="text-[9px] text-stone-400 block mb-1">スポンサーリンク</span>
+            <!-- AdSense 実装タグ -->
+            <ins class="adsbygoogle"
+                 style="display:block; min-height:60px;"
+                 data-ad-client="ca-pub-5012440476019514"
+                 data-ad-slot="6530054130"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+              try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+            </script>
+            <div class="py-1.5 text-[11px] text-stone-400 font-medium flex items-center justify-center gap-1">
+              <span>🍃</span><span>からだの違和感ノート・公式広告枠</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 2: 📊 まいにち測定 (②の人用：血圧・体重・薬)-->
+      <!-- ============================================== -->
+      <section id="tabVitals" class="hidden space-y-4">
+        <!-- 説明カード -->
+        <div class="bg-gradient-to-r from-emerald-50 to-brand-50 rounded-2xl p-3 border border-emerald-200 text-xs text-stone-700">
+          <div class="flex items-start gap-2">
+            <span class="text-lg">🩺</span>
+            <div>
+              <p class="font-bold text-stone-800 text-xs sm:text-sm">まいにちの血圧・体調 & お薬ノート</p>
+              <p class="text-stone-600 mt-0.5 text-[11px] leading-relaxed">
+                毎日の血圧や体重、処方されているお薬を管理する専用ページです。「カルテ」タブで医師にそのまま提示できます。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 毎日の測定入力フォーム -->
+        <form id="vitalsForm" onsubmit="handleSaveVital(event)" class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-3.5">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <h3 class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <span>📝</span><span>今日の数値を入力</span>
+            </h3>
+            <span id="vitalFormDateLabel" class="text-xs text-stone-500 font-medium"></span>
+          </div>
+
+          <!-- タイミング選択（朝 / 夜 / 昼） -->
+          <div>
+            <label class="block text-[11px] font-bold text-stone-700 mb-1.5">測定タイミング</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="vitalTiming" value="朝" checked class="peer sr-only">
+                <div class="py-2 text-center rounded-xl border border-stone-200 bg-stone-50 peer-checked:bg-amber-50 peer-checked:border-amber-400 peer-checked:text-amber-900 font-bold text-xs transition">
+                  🌅 起床後・朝
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="vitalTiming" value="夜" class="peer sr-only">
+                <div class="py-2 text-center rounded-xl border border-stone-200 bg-stone-50 peer-checked:bg-indigo-50 peer-checked:border-indigo-400 peer-checked:text-indigo-900 font-bold text-xs transition">
+                  🌙 就寝前・夜
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="vitalTiming" value="昼・その他" class="peer sr-only">
+                <div class="py-2 text-center rounded-xl border border-stone-200 bg-stone-50 peer-checked:bg-emerald-50 peer-checked:border-emerald-400 peer-checked:text-emerald-900 font-bold text-xs transition">
+                  ☀️ 昼・その他
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 血圧 ＆ 脈拍 -->
+          <div class="p-3 bg-stone-50/80 rounded-2xl border border-stone-200/80 space-y-2">
+            <label class="block text-xs font-bold text-stone-800 flex items-center justify-between">
+              <span class="flex items-center gap-1">💓 血圧 & 脈拍</span>
+              <span class="text-[10px] text-stone-400 font-normal">基準の目安: 135/85未満</span>
+            </label>
+            <div class="grid grid-cols-3 gap-2 items-center">
+              <div>
+                <label class="block text-[10px] text-stone-500 mb-0.5">最高（上）mmHg</label>
+                <input type="number" id="vitalBpSys" placeholder="125"
+                  class="w-full px-2.5 py-2 text-sm bg-white border border-stone-200 rounded-xl text-center font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+              <div>
+                <label class="block text-[10px] text-stone-500 mb-0.5">最低（下）mmHg</label>
+                <input type="number" id="vitalBpDia" placeholder="80"
+                  class="w-full px-2.5 py-2 text-sm bg-white border border-stone-200 rounded-xl text-center font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+              <div>
+                <label class="block text-[10px] text-stone-500 mb-0.5">脈拍 bpm (任意)</label>
+                <input type="number" id="vitalPulse" placeholder="72"
+                  class="w-full px-2.5 py-2 text-sm bg-white border border-stone-200 rounded-xl text-center font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+            </div>
+          </div>
+
+          <!-- 体温 ＆ 体重 -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-3 bg-stone-50/80 rounded-2xl border border-stone-200/80">
+              <label class="block text-xs font-bold text-stone-800 mb-1">🌡️ 体温 (℃)</label>
+              <input type="number" step="0.1" id="vitalTemp" placeholder="36.5"
+                class="w-full px-2.5 py-2 text-sm bg-white border border-stone-200 rounded-xl text-center font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-400">
+            </div>
+            <div class="p-3 bg-stone-50/80 rounded-2xl border border-stone-200/80">
+              <label class="block text-xs font-bold text-stone-800 mb-1">⚖️ 体重 (kg)</label>
+              <input type="number" step="0.1" id="vitalWeight" placeholder="65.4"
+                class="w-full px-2.5 py-2 text-sm bg-white border border-stone-200 rounded-xl text-center font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-brand-400">
+            </div>
+          </div>
+
+          <!-- 服薬チェック & メモ -->
+          <div class="space-y-2 pt-1">
+            <label class="flex items-center gap-2 p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200/60 cursor-pointer text-xs font-bold text-emerald-900">
+              <input type="checkbox" id="vitalMedTaken" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-400">
+              <span>💊 今日の処方薬・サプリを飲んだ</span>
+            </label>
+
+            <div>
+              <input type="text" id="vitalNote" placeholder="メモ（例：少し寝不足、夕食後に服用 など）"
+                class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-400">
+            </div>
+          </div>
+
+          <button type="submit" 
+            class="w-full py-3 bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold rounded-2xl text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>✅</span><span>今日の測定値を保存</span>
+          </button>
+        </form>
+
+        <!-- 服用中のお薬・処方メモ（任意登録セクション） -->
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-3">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base">💊</span>
+              <div>
+                <h3 class="text-xs font-bold text-stone-800">服用中のお薬・処方メモ（任意）</h3>
+                <p class="text-[10px] text-stone-400">薬が変わった時や処方された時期を記録できます</p>
+              </div>
+            </div>
+            <button onclick="toggleMedForm()" id="medFormToggleBtn" 
+              class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 px-2.5 py-1 bg-brand-50 rounded-xl">
+              <span>＋ 薬を登録</span>
+            </button>
+          </div>
+
+          <!-- お薬追加フォーム（トグル表示） -->
+          <form id="medAddForm" onsubmit="handleSaveMedicine(event)" class="hidden p-3 bg-stone-50 rounded-2xl border border-stone-200 space-y-2.5 text-xs">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-stone-700 mb-0.5">薬の名前 <span class="text-warm-coral">*</span></label>
+                <input type="text" id="medName" required placeholder="例: アムロジピン 5mg"
+                  class="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-stone-700 mb-0.5">何用か（目的）</label>
+                <input type="text" id="medPurpose" placeholder="例: 血圧を下げるため"
+                  class="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-stone-700 mb-0.5">いつから処方（時期）</label>
+                <input type="text" id="medStartDate" placeholder="例: 2026年9月中旬〜、先週の受診から"
+                  class="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-stone-700 mb-0.5">飲み方・補足メモ</label>
+                <input type="text" id="medMemo" placeholder="例: 毎朝食後1錠、痛む時のみ頓服"
+                  class="w-full px-2.5 py-1.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400">
+              </div>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button type="button" onclick="toggleMedForm()" class="flex-1 py-1.5 border border-stone-200 bg-white rounded-xl text-stone-600 font-bold">キャンセル</button>
+              <button type="submit" class="flex-1 py-1.5 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600">このお薬を保存</button>
+            </div>
+          </form>
+
+          <!-- 登録済みお薬リスト -->
+          <div id="medicineList" class="space-y-2">
+            <!-- JSで動的レンダリング -->
+          </div>
+        </div>
+
+        <!-- 最近の血圧手帳（直近7件の一覧表） -->
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-3">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base">📖</span>
+              <h3 class="text-xs font-bold text-stone-800">直近の測定一覧（血圧手帳風）</h3>
+            </div>
+            <span class="text-[10px] text-stone-400">最新順</span>
+          </div>
+
+          <!-- テーブル表示 -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead>
+                <tr class="bg-stone-50 text-stone-600 border-b border-stone-200 text-[11px]">
+                  <th class="py-2 px-2">日時</th>
+                  <th class="py-2 px-2 text-center">血圧 (上/下)</th>
+                  <th class="py-2 px-1 text-center">脈拍</th>
+                  <th class="py-2 px-1 text-center">体温</th>
+                  <th class="py-2 px-1 text-center">体重</th>
+                  <th class="py-2 px-1 text-center">服薬</th>
+                </tr>
+              </thead>
+              <tbody id="vitalsTableBody" class="divide-y divide-stone-100">
+                <!-- JSで動的レンダリング -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 3: 📋 じぶんのカルテ (お医者さん提示モード) -->
+      <!-- ============================================== -->
+      <section id="tabMyLogs" class="hidden space-y-3.5">
+        <!-- カルテ内ビュー切り替え（①違和感タイムライン / ②血圧・バイタル推移表） -->
+        <div class="bg-stone-200/70 p-1 rounded-2xl flex text-xs font-bold">
+          <button onclick="switchCarteView('timeline')" id="btnCarteTimeline"
+            class="flex-1 py-1.5 rounded-xl bg-white text-stone-800 shadow-sm transition">
+            ✍️ 違和感の履歴
+          </button>
+          <button onclick="switchCarteView('vitalsTable')" id="btnCarteVitals"
+            class="flex-1 py-1.5 rounded-xl text-stone-600 hover:text-stone-800 transition">
+            📊 血圧・バイタル表 & お薬（医師用）
+          </button>
+        </div>
+
+        <!-- 1. 違和感タイムライン表示エリア -->
+        <div id="carteTimelineArea" class="space-y-3">
+          <!-- 部位絞り込みフィルター -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs custom-scroll" id="filterContainer">
+            <button onclick="setFilter('all')" class="filter-btn px-3 py-1.5 rounded-xl bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm" data-filter="all">すべて</button>
+            <button onclick="setFilter('頭・こめかみ')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="頭・こめかみ">頭・こめかみ</button>
+            <button onclick="setFilter('首・肩')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="首・肩">首・肩</button>
+            <button onclick="setFilter('腰')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="腰">腰</button>
+            <button onclick="setFilter('背中')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="背中">背中</button>
+            <button onclick="setFilter('目・まぶた')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="目・まぶた">目・まぶた</button>
+            <button onclick="setFilter('胃腸・お腹')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="胃腸・お腹">胃腸・お腹</button>
+            <button onclick="setFilter('手足・関節')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="手足・関節">手足・関節</button>
+            <button onclick="setFilter('だるさ・全身')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="だるさ・全身">だるさ・全身</button>
+            <button onclick="setFilter('その他')" class="filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="その他">その他</button>
+          </div>
+
+          <!-- 記録一覧カードコンテナ -->
+          <div id="myLogList" class="space-y-3">
+            <!-- JSで動的レンダリング -->
+          </div>
+        </div>
+
+        <!-- 2. 医師向け血圧・バイタル一覧表 & お薬エリア -->
+        <div id="carteVitalsArea" class="hidden space-y-3">
+          
+          <!-- 医師確認用：現在処方中のお薬サマリーカード -->
+          <div class="bg-amber-50/70 rounded-3xl p-4 border border-amber-200/80 space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <span>💊</span><span>現在服用・処方中のお薬（医師確認用）</span>
+              </h4>
+              <span class="text-[10px] text-amber-700 font-medium">お薬手帳の代わりに提示可</span>
+            </div>
+            <div id="doctorMedSummary" class="space-y-1.5 text-xs text-stone-800">
+              <!-- JSで動的レンダリング -->
+            </div>
+          </div>
+
+          <!-- 血圧推移表カード -->
+          <div class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-3">
+            <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+              <div>
+                <h3 class="text-xs sm:text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                  <span>🩺</span><span>血圧・体調 推移記録（医師提示用シート）</span>
+                </h3>
+                <p class="text-[10px] text-stone-500 mt-0.5">直近の測定履歴を一覧表で確認できます</p>
+              </div>
+              <div class="text-right">
+                <span id="bpAverageBadge" class="text-[10px] bg-brand-50 text-brand-800 px-2 py-0.5 rounded-full font-bold"></span>
+              </div>
+            </div>
+
+            <!-- ドクター用見やすいテーブル -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left" id="doctorVitalsTable">
+                <thead>
+                  <tr class="bg-stone-100 text-stone-700 font-bold border-b border-stone-200 text-[11px]">
+                    <th class="py-2.5 px-2.5">日付</th>
+                    <th class="py-2.5 px-1.5 text-center">時帯</th>
+                    <th class="py-2.5 px-2 text-center">血圧 (上 / 下)</th>
+                    <th class="py-2.5 px-1.5 text-center">脈拍</th>
+                    <th class="py-2.5 px-1.5 text-center">体温</th>
+                    <th class="py-2.5 px-1.5 text-center">体重</th>
+                    <th class="py-2.5 px-1.5 text-center">服薬</th>
+                    <th class="py-2.5 px-2">メモ</th>
+                  </tr>
+                </thead>
+                <tbody id="doctorVitalsTableBody" class="divide-y divide-stone-200">
+                  <!-- JSで描画 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 4: 👥 みんなのノート (匿名共有タイムライン) -->
+      <!-- ============================================== -->
+      <section id="tabCommunity" class="hidden space-y-3.5">
+        <!-- 説明カード -->
+        <div class="bg-gradient-to-r from-warm-50 to-brand-50 border border-[#ecdccf] rounded-2xl p-3.5 text-xs">
+          <div class="flex items-start gap-2.5">
+            <span class="text-xl">🤝</span>
+            <div>
+              <p class="font-bold text-stone-800 text-sm">同世代の「あの違和感、どうだった？」</p>
+              <p class="text-stone-600 mt-0.5 leading-relaxed text-[11px]">
+                40代になると増える「正体不明の不調」。地域（土地柄・気候）と匿名で共有された違和感の記録と、その後の受診結果や経過を読むことができます。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- コミュニティ部位フィルター -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs custom-scroll" id="communityFilterContainer">
+          <button onclick="setCommunityFilter('all')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-warm-amber text-white font-bold whitespace-nowrap shadow-sm" data-filter="all">すべて</button>
+          <button onclick="setCommunityFilter('腰')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="腰">腰痛・腰まわり</button>
+          <button onclick="setCommunityFilter('頭・こめかみ')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="頭・こめかみ">頭痛・重み</button>
+          <button onclick="setCommunityFilter('目・まぶた')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="目・まぶた">目の奥・かすみ</button>
+          <button onclick="setCommunityFilter('胃腸・お腹')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="胃腸・お腹">胃腸・お腹</button>
+          <button onclick="setCommunityFilter('首・肩')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="首・肩">首・肩こり</button>
+        </div>
+
+        <!-- 匿名タイムラインリスト -->
+        <div id="communityList" class="space-y-3">
+          <!-- JSで動的レンダリング -->
+        </div>
+      </section>
+
+      <!-- yukiyanArt 共通自社統合広告プロモバー -->
+      <div class="max-w-xl mx-auto px-3 sm:px-4 pb-4 pt-2">
+        <div id="promo-bar"></div>
+      </div>
+
+      <!-- アプリについて＆お役立ちガイド（最下部コンテンツ・AdSense審査＆SEO対策） -->
+      <section class="max-w-xl mx-auto px-3 sm:px-4 pb-4">
+        <div class="bg-[#fcfaf7] border border-[#ece4d6] rounded-3xl p-5 sm:p-6 space-y-4 text-stone-700 shadow-2xs">
+          
+          <div class="flex items-center gap-2 border-b border-[#ece4d6] pb-3">
+            <span class="text-xl">🌿</span>
+            <div>
+              <h2 class="text-sm font-bold text-stone-800">からだの違和感ノートについて</h2>
+              <p class="text-[11px] text-stone-500">40代からの“なんとなくの不調”をサッとメモし、診察に活かすセルフログ</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs leading-relaxed text-stone-600">
+            <p>
+              40代前後になると、「病気とまでは言えないけれど、肩や首の張り、腰の重さ、頭痛、胃腸の張り、疲れやすさ」などの違和感を感じることが増えてきます。
+            </p>
+            
+            <div class="bg-white/90 rounded-2xl p-3.5 border border-[#ece4d6] space-y-1.5 shadow-2xs">
+              <h3 class="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                <span>🩺</span><span>あいまいに話すより「見せる」方が確実</span>
+              </h3>
+              <p class="text-[11px] text-stone-600 leading-relaxed">
+                いざ医療機関を受診した際、「いつ頃から、どんな感じでしたか？」と医師に尋ねられても、記憶だけでは曖昧になってしまいがちです。<br>
+                本アプリは、口頭で感覚的に説明するよりも、日々の記録をありのまま医師に見せることで、診察室での確実な意思疎通と的確な診療をサポートすることを前提として設計されています。
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div class="bg-white/80 p-3 rounded-2xl border border-[#ece4d6]">
+                <strong class="text-stone-800 block mb-0.5">🌱 3秒クイックメモ</strong>
+                頭・首肩・腰などの部位とオノマトペ感覚タグで、気になったその瞬間に素早く記録。数日前の出来事も過去日時に遡って入力できます。
+              </div>
+              <div class="bg-white/80 p-3 rounded-2xl border border-[#ece4d6]">
+                <strong class="text-stone-800 block mb-0.5">📊 まいにちの測定手帳</strong>
+                朝・昼・夜の血圧、脈拍、体温、体重や処方薬の服用状況を日課として手軽に記録。推移表としても確認できます。
+              </div>
+            </div>
+          </div>
+
+          <!-- アコーディオン（免責・プライバシー・お問い合わせ） -->
+          <div class="pt-2 border-t border-[#ece4d6] space-y-2 text-xs">
+            <!-- 免責事項 -->
+            <details class="group bg-white rounded-2xl border border-[#ece4d6] p-3 transition">
+              <summary class="font-bold text-stone-700 cursor-pointer flex items-center justify-between text-[11px] select-none">
+                <span class="flex items-center gap-1.5"><span>⚖️</span><span>医療に関する免責事項</span></span>
+                <span class="text-stone-400 group-open:rotate-180 transition-transform text-xs">▼</span>
+              </summary>
+              <div class="mt-2.5 pt-2 border-t border-stone-100 text-[11px] text-stone-500 space-y-1.5 leading-relaxed">
+                <p>• 本アプリは、利用者が自らの体調の違和感や測定値をメモし、医師への相談を補助するためのツールです。医療機器ではなく、病気の診断・治療・予防を目的としたものではありません。</p>
+                <p>• 本アプリ内のメモや「みんなのノート」の内容は個人の主観的な記録・体験談であり、医学的知見やアドバイスを提供するものではありません。</p>
+                <p>• 体調に強い不調を感じる場合や症状が続く場合は、自己判断に頼らず、必ず専門の医師や医療機関へご相談ください。</p>
+              </div>
+            </details>
+
+            <!-- プライバシーポリシー & 広告配信 -->
+            <details class="group bg-white rounded-2xl border border-[#ece4d6] p-3 transition">
+              <summary class="font-bold text-stone-700 cursor-pointer flex items-center justify-between text-[11px] select-none">
+                <span class="flex items-center gap-1.5"><span>🔒</span><span>プライバシーポリシー & 広告配信について</span></span>
+                <span class="text-stone-400 group-open:rotate-180 transition-transform text-xs">▼</span>
+              </summary>
+              <div class="mt-2.5 pt-2 border-t border-stone-100 text-[11px] text-stone-500 space-y-2 leading-relaxed">
+                <p><strong>【広告配信について】</strong><br>
+                当サイトでは、第三者配信事業者（Google AdSense）による広告サービスを利用しています。Google等の第三者事業者は、Cookie（クッキー）を使用して、ユーザーが当サイトや他のウェブサイトにアクセスした際の情報に基づき、適切なパーソナライズ広告を配信することがあります。<br>
+                パーソナライズ広告は、<a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline font-bold">Google 広告設定</a> にて無効に設定できます。また、<a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline font-bold">www.aboutads.info</a> にアクセスすることで、第三者配信事業者のCookieを無効化できます。</p>
+                <p><strong>【データの保護と管理】</strong><br>
+                ユーザーが入力した体調メモやバイタル測定データは、お使いの端末ブラウザ（LocalStorage）およびご自身がGoogleログインしたプライベート領域（Firebase Firestore）に暗号化通信を介して安全に保持されます。「みんなのノート」で匿名公開を選択された場合を除き、個人を特定するデータが第三者へ公開されることはありません。</p>
+              </div>
+            </details>
+
+            <!-- 運営者とお問い合わせ -->
+            <details class="group bg-white rounded-2xl border border-[#ece4d6] p-3 transition">
+              <summary class="font-bold text-stone-700 cursor-pointer flex items-center justify-between text-[11px] select-none">
+                <span class="flex items-center gap-1.5"><span>📮</span><span>運営者情報 & お問い合わせ（Feedback Hub）</span></span>
+                <span class="text-stone-400 group-open:rotate-180 transition-transform text-xs">▼</span>
+              </summary>
+              <div class="mt-2.5 pt-2 border-t border-stone-100 text-[11px] text-stone-500 space-y-2 leading-relaxed">
+                <p><strong>運営者:</strong> yukiyanArt</p>
+                <p>アプリの不具合報告、改善のご要望、機能追加のアイデア、その他のお問い合わせは、公式サポート窓口である <strong>「Feedback & Release Hub」</strong> よりお気軽にお寄せください。</p>
+                <a href="https://yukiyanart-feedback-hub.web.app/?app_id=karada_note" target="_blank" rel="noopener noreferrer" 
+                   class="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl transition text-xs mt-1">
+                  <span>📨</span><span>Feedback & Release Hub で問い合わせ・要望を送る</span>
+                </a>
+              </div>
+            </details>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- フッター -->
+      <footer class="max-w-xl mx-auto px-4 pt-2 pb-8 text-center text-stone-400 text-[11px] space-y-2">
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-stone-500">
+          <button type="button" onclick="openInfoModal('about')" class="hover:text-stone-800 underline">アプリについて</button>
+          <span>•</span>
+          <button type="button" onclick="openInfoModal('disclaimer')" class="hover:text-stone-800 underline">医療免責事項</button>
+          <span>•</span>
+          <button type="button" onclick="openInfoModal('privacy')" class="hover:text-stone-800 underline">プライバシーポリシー</button>
+          <span>•</span>
+          <a href="https://yukiyanart-feedback-hub.web.app/?app_id=karada_note" target="_blank" rel="noopener noreferrer" class="hover:text-stone-800 underline flex items-center gap-1">
+            <span>お問い合わせ (Hub)</span>
+            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+        <p>© 2026 yukiyanArt - からだの違和感ノート</p>
+      </footer>
+
+    </main>
+
+    <!-- モーダル：インフォメーション / ポリシー / 免責事項 / お問い合わせ -->
+    <div id="infoModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 shadow-xl border border-stone-200 max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+        
+        <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl" id="infoModalIcon">🌿</span>
+            <h3 class="font-bold text-stone-800 text-sm" id="infoModalTitle">インフォメーション</h3>
+          </div>
+          <button type="button" onclick="closeInfoModal()" class="text-stone-400 hover:text-stone-600 text-lg">&times;</button>
+        </div>
+
+        <!-- タブ切り替え -->
+        <div class="flex items-center gap-1 overflow-x-auto pb-1 text-xs border-b border-stone-100 custom-scroll">
+          <button type="button" onclick="switchInfoTab('about')" id="infoTab-about" class="px-3 py-1.5 rounded-xl font-bold transition">アプリについて</button>
+          <button type="button" onclick="switchInfoTab('disclaimer')" id="infoTab-disclaimer" class="px-3 py-1.5 rounded-xl font-bold transition">医療免責事項</button>
+          <button type="button" onclick="switchInfoTab('privacy')" id="infoTab-privacy" class="px-3 py-1.5 rounded-xl font-bold transition">プライバシー & 広告</button>
+          <button type="button" onclick="switchInfoTab('contact')" id="infoTab-contact" class="px-3 py-1.5 rounded-xl font-bold transition">お問い合わせ (Hub)</button>
+        </div>
+
+        <!-- 本文エリア（スクロール可能） -->
+        <div id="infoModalBody" class="text-xs text-stone-600 space-y-3 leading-relaxed overflow-y-auto pr-1 flex-1 custom-scroll">
+          <!-- JSで切り替え -->
+        </div>
+
+        <div class="pt-2 border-t border-stone-100">
+          <button type="button" onclick="closeInfoModal()" class="w-full py-2.5 rounded-xl border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-50">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- モーダル：クラウド同期設定（Googleアカウント連携） -->
+    <div id="syncModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-5 space-y-4 shadow-xl border border-stone-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">☁️</span>
+            <h3 class="font-bold text-stone-800 text-sm">スマホとPCの同期（データ保存）</h3>
+          </div>
+          <button onclick="closeSyncModal()" class="text-stone-400 hover:text-stone-600 text-lg">&times;</button>
+        </div>
+
+        <div class="text-xs text-stone-600 space-y-2 leading-relaxed">
+          <p>
+            ブラウザのローカル保存だけだと、スマホで記録したメモをPCで見たり、機種変更したときに消えてしまう可能性があります。
+          </p>
+          <div class="p-3 bg-brand-50 rounded-2xl border border-brand-200 space-y-1">
+            <p class="font-bold text-brand-800 flex items-center gap-1">
+              <span>🔒</span> Googleアカウント連携による保存
+            </p>
+            <p class="text-[11px] text-brand-700">
+              面倒なID・パスワード設定不要で、Googleアカウント1つで安全に暗号化保存され、スマホとPCでリアルタイムにメモが同期されます。
+            </p>
+          </div>
+        </div>
+
+        <!-- 連携シミュレーションエリア -->
+        <div id="syncAccountStatus" class="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 text-xs">
+          <!-- JSで切り替え -->
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="closeSyncModal()" class="w-full py-2.5 rounded-xl border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-50">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- モーダル：その後の経過・診断結果の追記 -->
+    <div id="followUpModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-5 space-y-4 shadow-xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🩺</span>
+            <h3 class="font-bold text-stone-800 text-sm">その後の経過・病院での診断メモ</h3>
+          </div>
+          <button onclick="closeFollowUpModal()" class="text-stone-400 hover:text-stone-600 text-lg">&times;</button>
+        </div>
+        
+        <p class="text-xs text-stone-500 leading-relaxed">
+          病院に行って分かったことや、「数日で自然に落ち着いた」「冷湿布を貼ったら楽になった」などの経過を追記できます。
+        </p>
+
+        <input type="hidden" id="followUpItemId">
+
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-stone-700">病院での受診状況（任意）</label>
+          <input type="text" id="followUpHospital" placeholder="例：〇〇整形外科を受診、レントゲン検査"
+            class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400">
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-stone-700">診断名・医師からの助言・現在の様子</label>
+          <textarea id="followUpNote" rows="3" placeholder="例：骨に異常なし。軽い筋膜性腰痛とのことでストレッチと湿布を処方。3日ほどで痛みが和らいだ。"
+            class="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"></textarea>
+        </div>
+
+        <div class="p-3 bg-stone-50 rounded-xl border border-stone-200">
+          <label class="flex items-center gap-2 text-xs text-stone-700 cursor-pointer">
+            <input type="checkbox" id="followUpMakePublic" class="rounded text-brand-600 focus:ring-brand-400">
+            <span class="font-bold">この経過を含めて匿名で「みんなのノート」に共有する</span>
+          </label>
+          <p class="text-[10px] text-stone-400 ml-5 mt-0.5">同じ違和感を経験している人の参考になります。</p>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="closeFollowUpModal()" class="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-50">キャンセル</button>
+          <button type="button" onclick="saveFollowUp()" class="flex-1 py-2.5 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 shadow-sm">保存する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-xs px-4 py-2.5 rounded-full shadow-lg transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+      <span id="toastIcon">✨</span>
+      <span id="toastMessage">保存しました</span>
+    </div>
+
+  </div>
+
+  <script>
+    // 都道府県リスト
+    const PREFECTURES = [
+      '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+      '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+      '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+      '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+      '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+      '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+      '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+    ];
+
+    // 部位の定義
+    const BODY_PARTS = [
+      { id: '頭・こめかみ', icon: '🧠', label: '頭・こめかみ' },
+      { id: '首・肩', icon: '🧣', label: '首・肩こり' },
+      { id: '腰', icon: '⚡', label: '腰・腰まわり' },
+      { id: '背中', icon: '🩹', label: '背中・肩甲骨' },
+      { id: '目・まぶた', icon: '👁️', label: '目・まぶた' },
+      { id: '胃腸・お腹', icon: '🍵', label: '胃腸・お腹' },
+      { id: '手足・関節', icon: '🦵', label: '手足・関節' },
+      { id: 'だるさ・全身', icon: '☁️', label: 'だるさ・全身' },
+      { id: 'その他', icon: '✏️', label: 'その他' }
+    ];
+
+    // 初期データ（本番用：空のリストから開始）
+    const INITIAL_LOGS = [];
+    const INITIAL_VITALS = [];
+    const INITIAL_MEDICINES = [];
+
+    // 既存ブラウザ内の初期サンプルデータの自動クリーニング（安全な1回限りの移行処理）
+    (function cleanOldSampleData() {
+      try {
+        const cleanupVersionKey = 'karada_sample_cleaned_v3';
+        if (localStorage.getItem(cleanupVersionKey)) return;
+
+        // 旧サンプルデータのみを厳密にフィルタリング（ユーザーが追加したデータは絶対に消さない）
+        const sampleLogIds = new Set(['sample-1', 'sample-2', 'sample-3']);
+        const sampleVitalIds = new Set(['vital-1', 'vital-2', 'vital-3']);
+        const sampleMedIds = new Set(['med-1', 'med-2', 'med-3']);
+
+        const storedLogs = localStorage.getItem('karada_memo_logs');
+        if (storedLogs) {
+          try {
+            const parsed = JSON.parse(storedLogs);
+            if (Array.isArray(parsed)) {
+              const cleaned = parsed.filter(item => !sampleLogIds.has(item.id));
+              localStorage.setItem('karada_memo_logs', JSON.stringify(cleaned));
+            }
+          } catch(e) {}
+        }
+
+        const storedVitals = localStorage.getItem('karada_vitals_logs');
+        if (storedVitals) {
+          try {
+            const parsed = JSON.parse(storedVitals);
+            if (Array.isArray(parsed)) {
+              const cleaned = parsed.filter(item => !sampleVitalIds.has(item.id));
+              localStorage.setItem('karada_vitals_logs', JSON.stringify(cleaned));
+            }
+          } catch(e) {}
+        }
+
+        const storedMeds = localStorage.getItem('karada_medicines_logs');
+        if (storedMeds) {
+          try {
+            const parsed = JSON.parse(storedMeds);
+            if (Array.isArray(parsed)) {
+              const cleaned = parsed.filter(item => !sampleMedIds.has(item.id));
+              localStorage.setItem('karada_medicines_logs', JSON.stringify(cleaned));
+            }
+          } catch(e) {}
+        }
+
+        localStorage.setItem(cleanupVersionKey, 'true');
+      } catch (e) {
+        console.warn('Sample cleanup check:', e);
+      }
+    })();
+
+    // ==========================================
+    // Firebase 設定 & 認証・Firestore 同期
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCl_dtBZNBQBTHwtrVe7vrm38tS5b705NI",
+      authDomain: "yukiyanart-feedback-hub.firebaseapp.com",
+      projectId: "yukiyanart-feedback-hub",
+      storageBucket: "yukiyanart-feedback-hub.firebasestorage.app",
+      messagingSenderId: "19779026628",
+      appId: "1:19779026628:web:f22fdc61e19115afa91391"
+    };
+
+    let currentUser = null;
+    let auth = null;
+    let db = null;
+    let firestoreUnsubscribe = null;
+    let isSavingToFirestore = false;
+
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+      }
+    } catch (e) {
+      console.warn('Firebase init error:', e);
+    }
+
+    let currentSelectedPart = '';
+    let currentFilter = 'all';
+    let currentCommunityFilter = 'all';
+    let isDoctorMode = false;
+    let currentCarteView = 'timeline'; // 'timeline' or 'vitalsTable'
+
+    // 日付ヘルパー
+    function getRelativeDay(dayOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOffset);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getRelativeDateStr(dayOffset, hours, minutes) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOffset);
+      if (hours !== undefined) d.setHours(hours);
+      if (minutes !== undefined) d.setMinutes(minutes);
+      return formatForInput(d);
+    }
+
+    function formatForInput(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${mins}`;
+    }
+
+    function formatDisplayDateTime(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr);
+      const now = new Date();
+      const isToday = d.toDateString() === now.toDateString();
+      
+      const yesterday = new Date();
+      yesterday.setDate(now.getDate() - 1);
+      const isYesterday = d.toDateString() === yesterday.toDateString();
+
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const week = weekdays[d.getDay()];
+
+      let dayLabel = `${m}月${day}日(${week})`;
+      if (isToday) dayLabel = `今日 (${week})`;
+      if (isYesterday) dayLabel = `昨日 (${week})`;
+
+      return `${dayLabel} ${hours}:${mins}`;
+    }
+
+    function formatDisplayDateOnly(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length < 3) return dateStr;
+      const d = new Date(parts[0], parseInt(parts[1]) - 1, parts[2]);
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const week = weekdays[d.getDay()];
+      return `${parseInt(parts[1])}月${parseInt(parts[2])}日(${week})`;
+    }
+
+    // LocalStorage & クラウド同期 管理
+    function getLogs() {
+      const saved = localStorage.getItem('karada_memo_logs');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { }
+      }
+      localStorage.setItem('karada_memo_logs', JSON.stringify(INITIAL_LOGS));
+      return INITIAL_LOGS;
+    }
+
+    function saveLogs(logs, syncCloud = true) {
+      localStorage.setItem('karada_memo_logs', JSON.stringify(logs));
+      renderMyLogs();
+      renderCommunity();
+      updateBadge();
+      if (syncCloud) syncDataToFirestore('logs', logs);
+    }
+
+    function getVitals() {
+      const saved = localStorage.getItem('karada_vitals_logs');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { }
+      }
+      localStorage.setItem('karada_vitals_logs', JSON.stringify(INITIAL_VITALS));
+      return INITIAL_VITALS;
+    }
+
+    function saveVitals(vitals, syncCloud = true) {
+      localStorage.setItem('karada_vitals_logs', JSON.stringify(vitals));
+      renderVitalsTable();
+      renderDoctorVitalsTable();
+      if (syncCloud) syncDataToFirestore('vitals', vitals);
+    }
+
+    function getMedicines() {
+      const saved = localStorage.getItem('karada_medicines_logs');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { }
+      }
+      localStorage.setItem('karada_medicines_logs', JSON.stringify(INITIAL_MEDICINES));
+      return INITIAL_MEDICINES;
+    }
+
+    function saveMedicines(meds, syncCloud = true) {
+      localStorage.setItem('karada_medicines_logs', JSON.stringify(meds));
+      renderMedicines();
+      renderDoctorMedSummary();
+      if (syncCloud) syncDataToFirestore('medicines', meds);
+    }
+
+
+
+    // 初期化処理
+    window.addEventListener('DOMContentLoaded', () => {
+      initPrefectureSelect();
+      renderBodyParts();
+      setDateTimeToNow();
+      renderMyLogs();
+      renderCommunity();
+      renderVitalsTable();
+      renderMedicines();
+      renderDoctorVitalsTable();
+      renderDoctorMedSummary();
+      updateBadge();
+      initAuthListener();
+      
+      if (window.YukiyanArtPromo) {
+        YukiyanArtPromo.init({
+          target: '#promo-bar',
+          type: 'beta',
+          currentAppId: 'karada_note'
+        });
+      }
+
+      const now = new Date();
+      document.getElementById('vitalFormDateLabel').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
+    });
+
+    // 都道府県セレクトボックスの初期化
+    function initPrefectureSelect() {
+      const select = document.getElementById('userPrefecture');
+      select.innerHTML = '<option value="">未設定</option>' + PREFECTURES.map(p => `
+        <option value="${p}">${p}</option>
+      `).join('');
+
+      const savedPref = localStorage.getItem('karada_user_pref');
+      if (savedPref) {
+        select.value = savedPref;
+      }
+    }
+
+    function savePrefecturePref(val) {
+      if (val) {
+        localStorage.setItem('karada_user_pref', val);
+        showToast(`🗾 地域を「${val}」に設定しました`);
+        syncDataToFirestore('prefecture', val);
+      } else {
+        localStorage.removeItem('karada_user_pref');
+        syncDataToFirestore('prefecture', '');
+      }
+    }
+
+    // 部位ボタンのレンダリング
+    function renderBodyParts() {
+      const container = document.getElementById('bodyPartContainer');
+      container.innerHTML = BODY_PARTS.map(part => `
+        <button type="button" onclick="selectPart('${part.id}')" id="part-btn-${part.id}"
+          class="body-part-btn p-2.5 rounded-2xl border border-stone-200 bg-stone-50 hover:bg-stone-100 flex flex-col items-center justify-center transition active:scale-95 text-stone-700">
+          <span class="text-xl mb-1">${part.icon}</span>
+          <span class="text-xs font-bold truncate">${part.label}</span>
+        </button>
+      `).join('');
+    }
+
+    function selectPart(partId) {
+      currentSelectedPart = partId;
+      document.querySelectorAll('.body-part-btn').forEach(btn => {
+        btn.classList.remove('pill-active');
+      });
+      const selectedBtn = document.getElementById(`part-btn-${partId}`);
+      if (selectedBtn) {
+        selectedBtn.classList.add('pill-active');
+      }
+
+      const otherWrapper = document.getElementById('otherPartInputWrapper');
+      const otherInput = document.getElementById('otherPartInput');
+
+      if (partId === 'その他') {
+        otherWrapper.classList.remove('hidden');
+        otherInput.focus();
+        document.getElementById('selectedPartLabel').textContent = '「その他」の部位を入力してください';
+      } else {
+        otherWrapper.classList.add('hidden');
+        document.getElementById('selectedPartLabel').textContent = `「${partId}」を選択中`;
+      }
+      document.getElementById('selectedPartLabel').classList.add('text-brand-600');
+    }
+
+    // クイック日時設定
+    function setDateTimeToNow() {
+      const now = new Date();
+      document.getElementById('memoDatetime').value = formatForInput(now);
+    }
+
+    function setQuickDate(dayOffset, timeOfDay) {
+      const target = new Date();
+      target.setDate(target.getDate() + dayOffset);
+
+      if (timeOfDay === '今') {
+        const now = new Date();
+        target.setHours(now.getHours(), now.getMinutes());
+      } else if (timeOfDay === '朝') {
+        target.setHours(7, 30);
+      } else if (timeOfDay === '昼') {
+        target.setHours(12, 30);
+      } else if (timeOfDay === '夜') {
+        target.setHours(21, 0);
+      }
+
+      document.getElementById('memoDatetime').value = formatForInput(target);
+      showToast('🕒 日時をセットしました');
+    }
+
+    // オノマトペ・タグの追記
+    function appendTag(text) {
+      const textarea = document.getElementById('memoContent');
+      if (textarea.value.trim().length === 0) {
+        textarea.value = text + '。';
+      } else {
+        textarea.value = textarea.value.trim() + '、' + text + '。';
+      }
+      textarea.focus();
+    }
+
+    // ① 違和感メモの保存処理
+    function handleSaveMemo(e) {
+      e.preventDefault();
+      if (!currentSelectedPart) {
+        alert('違和感のある「部位」を選択してください。');
+        return;
+      }
+
+      let finalPartName = currentSelectedPart;
+      if (currentSelectedPart === 'その他') {
+        const otherDetail = document.getElementById('otherPartInput').value.trim();
+        finalPartName = otherDetail ? `その他（${otherDetail}）` : 'その他';
+      }
+
+      const datetime = document.getElementById('memoDatetime').value;
+      const content = document.getElementById('memoContent').value.trim();
+      const severity = parseInt(document.querySelector('input[name="severity"]:checked').value);
+      const isPublic = document.querySelector('input[name="isPublic"]:checked').value === 'true';
+      const prefecture = document.getElementById('userPrefecture').value || '';
+
+      const newLog = {
+        id: 'log-' + Date.now(),
+        part: finalPartName,
+        prefecture: prefecture,
+        datetime: datetime,
+        content: content || '（違和感の記録）',
+        severity: severity,
+        isPublic: isPublic,
+        reactionCount: 0,
+        followUp: null
+      };
+
+      const logs = getLogs();
+      logs.unshift(newLog);
+      saveLogs(logs);
+
+      document.getElementById('memoContent').value = '';
+      document.getElementById('otherPartInput').value = '';
+      document.getElementById('otherPartInputWrapper').classList.add('hidden');
+
+      currentSelectedPart = '';
+      document.querySelectorAll('.body-part-btn').forEach(btn => btn.classList.remove('pill-active'));
+      document.getElementById('selectedPartLabel').textContent = '選択してください';
+      setDateTimeToNow();
+
+      showToast('🌱 違和感をノートに記録しました');
+      
+      setTimeout(() => {
+        switchTab('myLogs');
+      }, 400);
+    }
+
+    // ② まいにちバイタルの保存処理
+    function handleSaveVital(e) {
+      e.preventDefault();
+      const timing = document.querySelector('input[name="vitalTiming"]:checked').value;
+      const bpSys = document.getElementById('vitalBpSys').value.trim();
+      const bpDia = document.getElementById('vitalBpDia').value.trim();
+      const pulse = document.getElementById('vitalPulse').value.trim();
+      const temp = document.getElementById('vitalTemp').value.trim();
+      const weight = document.getElementById('vitalWeight').value.trim();
+      const medTaken = document.getElementById('vitalMedTaken').checked;
+      const note = document.getElementById('vitalNote').value.trim();
+
+      if (!bpSys && !temp && !weight) {
+        alert('血圧、体温、体重のいずれかを入力してください。');
+        return;
+      }
+
+      const newVital = {
+        id: 'vital-' + Date.now(),
+        date: getRelativeDay(0),
+        timing: timing,
+        bpSys: bpSys,
+        bpDia: bpDia,
+        pulse: pulse,
+        temp: temp,
+        weight: weight,
+        medTaken: medTaken,
+        note: note
+      };
+
+      const vitals = getVitals();
+      vitals.unshift(newVital);
+      saveVitals(vitals);
+
+      document.getElementById('vitalBpSys').value = '';
+      document.getElementById('vitalBpDia').value = '';
+      document.getElementById('vitalPulse').value = '';
+      document.getElementById('vitalTemp').value = '';
+      document.getElementById('vitalWeight').value = '';
+      document.getElementById('vitalNote').value = '';
+
+      showToast('📊 今日の数値を記録しました');
+    }
+
+    // ③ お薬登録・管理
+    function toggleMedForm() {
+      const form = document.getElementById('medAddForm');
+      form.classList.toggle('hidden');
+    }
+
+    function handleSaveMedicine(e) {
+      e.preventDefault();
+      const name = document.getElementById('medName').value.trim();
+      const purpose = document.getElementById('medPurpose').value.trim();
+      const startDate = document.getElementById('medStartDate').value.trim();
+      const memo = document.getElementById('medMemo').value.trim();
+
+      if (!name) {
+        alert('お薬の名前を入力してください。');
+        return;
+      }
+
+      const newMed = {
+        id: 'med-' + Date.now(),
+        name: name,
+        purpose: purpose || '未記入',
+        startDate: startDate || '最近処方',
+        memo: memo || '',
+        status: 'active'
+      };
+
+      const meds = getMedicines();
+      meds.unshift(newMed);
+      saveMedicines(meds);
+
+      document.getElementById('medName').value = '';
+      document.getElementById('medPurpose').value = '';
+      document.getElementById('medStartDate').value = '';
+      document.getElementById('medMemo').value = '';
+      toggleMedForm();
+      showToast('💊 お薬を登録しました');
+    }
+
+    function toggleMedStatus(id) {
+      const meds = getMedicines();
+      const target = meds.find(m => m.id === id);
+      if (target) {
+        target.status = target.status === 'active' ? 'ended' : 'active';
+        saveMedicines(meds);
+        showToast(target.status === 'active' ? '🟢 服用中に戻しました' : '⚪ 服用終了・変更にしました');
+      }
+    }
+
+    function deleteMedicine(id) {
+      if (!confirm('このお薬の記録を削除しますか？')) return;
+      let meds = getMedicines();
+      meds = meds.filter(m => m.id !== id);
+      saveMedicines(meds);
+      showToast('🗑️ お薬メモを削除しました');
+    }
+
+    function renderMedicines() {
+      const container = document.getElementById('medicineList');
+      const meds = getMedicines();
+
+      if (meds.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-3 text-stone-400 text-xs">
+            登録されているお薬はありません
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = meds.map(item => `
+        <div class="p-2.5 rounded-2xl border transition flex items-start justify-between gap-2 ${item.status === 'active' ? 'bg-emerald-50/50 border-emerald-200' : 'bg-stone-50 border-stone-200 opacity-60'}">
+          <div class="space-y-1 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-xs text-stone-800">${escapeHtml(item.name)}</span>
+              <span class="text-[10px] px-2 py-0.2 rounded-full font-bold ${item.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'}">
+                ${item.status === 'active' ? '🟢 服用中' : '⚪ 変更・終了'}
+              </span>
+              <span class="text-[10px] text-stone-500 bg-white/80 px-1.5 py-0.2 rounded-md border border-stone-200">
+                🕒 ${escapeHtml(item.startDate)}
+              </span>
+            </div>
+            <p class="text-xs text-stone-600 font-medium">🎯 ${escapeHtml(item.purpose)}</p>
+            ${item.memo ? `<p class="text-[11px] text-stone-500">📝 ${escapeHtml(item.memo)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-1 text-[11px]">
+            <button onclick="toggleMedStatus('${item.id}')" class="px-2 py-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 font-medium">
+              ${item.status === 'active' ? '終了にする' : '再開'}
+            </button>
+            <button onclick="deleteMedicine('${item.id}')" class="text-stone-300 hover:text-rose-500 p-1" title="削除">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 医師提示用：お薬サマリーの描画
+    function renderDoctorMedSummary() {
+      const container = document.getElementById('doctorMedSummary');
+      const meds = getMedicines();
+      const activeMeds = meds.filter(m => m.status === 'active');
+
+      if (activeMeds.length === 0) {
+        container.innerHTML = `<p class="text-stone-500 text-[11px]">現在服用中として登録されたお薬はありません</p>`;
+        return;
+      }
+
+      container.innerHTML = activeMeds.map(item => `
+        <div class="p-2 bg-white/90 rounded-xl border border-amber-200/60 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-stone-900">${escapeHtml(item.name)}</span>
+            <span class="text-stone-600">【${escapeHtml(item.purpose)}】</span>
+          </div>
+          <div class="text-[10px] text-stone-500 whitespace-nowrap">
+            処方: ${escapeHtml(item.startDate)}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // まいにち測定タブでの直近テーブル描画
+    function renderVitalsTable() {
+      const container = document.getElementById('vitalsTableBody');
+      const vitals = getVitals();
+
+      if (vitals.length === 0) {
+        container.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-stone-400 text-xs">まだ測定記録がありません</td></tr>`;
+        return;
+      }
+
+      container.innerHTML = vitals.slice(0, 7).map(item => {
+        const isHighBp = (parseInt(item.bpSys) >= 135) || (parseInt(item.bpDia) >= 85);
+        return `
+          <tr class="hover:bg-stone-50 transition">
+            <td class="py-2.5 px-2 font-medium text-stone-700 whitespace-nowrap">
+              ${formatDisplayDateOnly(item.date)} <span class="text-[10px] text-stone-400">(${item.timing})</span>
+            </td>
+            <td class="py-2.5 px-2 text-center font-bold ${isHighBp ? 'text-amber-800 bg-amber-50/50 rounded-lg' : 'text-stone-800'}">
+              ${(item.bpSys && item.bpDia) ? `${item.bpSys} / ${item.bpDia}` : '-'}
+            </td>
+            <td class="py-2.5 px-1 text-center text-stone-600">${item.pulse ? `${item.pulse}` : '-'}</td>
+            <td class="py-2.5 px-1 text-center text-stone-600">${item.temp ? `${item.temp}℃` : '-'}</td>
+            <td class="py-2.5 px-1 text-center text-stone-600">${item.weight ? `${item.weight}kg` : '-'}</td>
+            <td class="py-2.5 px-1 text-center">${item.medTaken ? '💊 飲んだ' : '<span class="text-stone-300">-</span>'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 医師提示用シート（推移表）の描画
+    function renderDoctorVitalsTable() {
+      const container = document.getElementById('doctorVitalsTableBody');
+      const vitals = getVitals();
+
+      if (vitals.length === 0) {
+        container.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-stone-400 text-xs">測定記録がありません</td></tr>`;
+        return;
+      }
+
+      let validBpCount = 0;
+      let sumSys = 0;
+      let sumDia = 0;
+      vitals.forEach(v => {
+        if (v.bpSys && v.bpDia) {
+          sumSys += parseInt(v.bpSys);
+          sumDia += parseInt(v.bpDia);
+          validBpCount++;
+        }
+      });
+
+      if (validBpCount > 0) {
+        const avgSys = Math.round(sumSys / validBpCount);
+        const avgDia = Math.round(sumDia / validBpCount);
+        document.getElementById('bpAverageBadge').textContent = `直近平均: ${avgSys} / ${avgDia} mmHg`;
+      } else {
+        document.getElementById('bpAverageBadge').textContent = '';
+      }
+
+      container.innerHTML = vitals.map(item => {
+        const isHighBp = (parseInt(item.bpSys) >= 135) || (parseInt(item.bpDia) >= 85);
+        return `
+          <tr class="hover:bg-brand-50/30 transition ${isDoctorMode ? 'text-sm font-medium' : ''}">
+            <td class="py-2.5 px-2.5 font-bold text-stone-800 whitespace-nowrap">
+              ${formatDisplayDateOnly(item.date)}
+            </td>
+            <td class="py-2.5 px-1.5 text-center">
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${item.timing === '朝' ? 'bg-amber-100 text-amber-900' : (item.timing === '夜' ? 'bg-indigo-100 text-indigo-900' : 'bg-stone-100 text-stone-700')}">
+                ${item.timing}
+              </span>
+            </td>
+            <td class="py-2.5 px-2 text-center font-extrabold ${isHighBp ? 'text-amber-800 bg-amber-50/60 rounded-lg' : 'text-stone-900'}">
+              ${(item.bpSys && item.bpDia) ? `${item.bpSys} / ${item.bpDia}` : '-'}
+            </td>
+            <td class="py-2.5 px-1.5 text-center text-stone-700">${item.pulse ? `${item.pulse}` : '-'}</td>
+            <td class="py-2.5 px-1.5 text-center text-stone-700">${item.temp ? `${item.temp}℃` : '-'}</td>
+            <td class="py-2.5 px-1.5 text-center text-stone-700">${item.weight ? `${item.weight}kg` : '-'}</td>
+            <td class="py-2.5 px-1.5 text-center font-medium">${item.medTaken ? '💊 済' : '<span class="text-stone-300">-</span>'}</td>
+            <td class="py-2.5 px-2 text-stone-600 text-xs truncate max-w-[120px]" title="${escapeHtml(item.note || '')}">
+              ${escapeHtml(item.note || '-')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // じぶんのカルテ内での表示切り替え（違和感 / バイタル推移表）
+    function switchCarteView(view) {
+      currentCarteView = view;
+      const btnTimeline = document.getElementById('btnCarteTimeline');
+      const btnVitals = document.getElementById('btnCarteVitals');
+      const areaTimeline = document.getElementById('carteTimelineArea');
+      const areaVitals = document.getElementById('carteVitalsArea');
+
+      if (view === 'timeline') {
+        areaTimeline.classList.remove('hidden');
+        areaVitals.classList.add('hidden');
+        btnTimeline.className = "flex-1 py-1.5 rounded-xl bg-white text-stone-800 shadow-sm transition";
+        btnVitals.className = "flex-1 py-1.5 rounded-xl text-stone-600 hover:text-stone-800 transition";
+      } else {
+        areaTimeline.classList.add('hidden');
+        areaVitals.classList.remove('hidden');
+        btnTimeline.className = "flex-1 py-1.5 rounded-xl text-stone-600 hover:text-stone-800 transition";
+        btnVitals.className = "flex-1 py-1.5 rounded-xl bg-white text-stone-800 shadow-sm transition";
+        renderDoctorVitalsTable();
+        renderDoctorMedSummary();
+      }
+    }
+
+    // じぶんの記録（違和感タイムライン）の描画
+    function renderMyLogs() {
+      const container = document.getElementById('myLogList');
+      const logs = getLogs();
+      
+      const filtered = logs.filter(log => {
+        if (currentFilter === 'all') return true;
+        return log.part.includes(currentFilter) || currentFilter.includes(log.part);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-8 text-center text-stone-400 space-y-2 border border-[#ece4d6]">
+            <span class="text-3xl">📝</span>
+            <p class="text-xs font-bold text-stone-600">記録がまだありません</p>
+            <p class="text-[11px]">「違和感メモ」タブから気になる違和感を書いてみましょう。</p>
+          </div>
+        `;
+        return;
+      }
+
+      const severityBadges = {
+        1: '<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">🙂 ほんのり</span>',
+        2: '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">😐 気になる</span>',
+        3: '<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">😣 つらい・痛む</span>'
+      };
+
+      container.innerHTML = filtered.map(item => `
+        <article class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5 transition hover:shadow-md ${isDoctorMode ? 'p-5 border-2 border-brand-300' : ''}">
+          
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <div class="flex items-center flex-wrap gap-1.5">
+              <span class="font-bold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 ${isDoctorMode ? 'text-sm font-extrabold px-3 py-1.5' : ''}">
+                <span>📍</span><span>${escapeHtml(item.part)}</span>
+              </span>
+              ${severityBadges[item.severity] || ''}
+              ${item.prefecture ? `<span class="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full font-medium">🗾 ${escapeHtml(item.prefecture)}</span>` : ''}
+            </div>
+            <div class="text-right">
+              <time class="text-xs font-bold text-stone-600 block ${isDoctorMode ? 'text-sm text-stone-900 font-extrabold' : ''}">
+                ${formatDisplayDateTime(item.datetime)}
+              </time>
+            </div>
+          </div>
+
+          <p class="text-stone-800 leading-relaxed ${isDoctorMode ? 'text-base font-medium py-1.5 text-stone-900' : 'text-xs'}">
+            ${escapeHtml(item.content)}
+          </p>
+
+          ${item.followUp ? `
+            <div class="mt-2 p-3 bg-brand-50/70 rounded-2xl border border-brand-200 text-xs space-y-1">
+              <div class="flex items-center justify-between font-bold text-brand-800">
+                <span class="flex items-center gap-1"><span>🩺</span> その後の経過・医師の診断</span>
+                <span class="text-[10px] text-brand-600 font-normal">追記: ${formatDisplayDateTime(item.followUp.updatedAt)}</span>
+              </div>
+              ${item.followUp.hospital ? `<p class="text-stone-700 font-medium text-[11px]">🏥 ${escapeHtml(item.followUp.hospital)}</p>` : ''}
+              <p class="text-stone-700 leading-normal">${escapeHtml(item.followUp.note)}</p>
+            </div>
+          ` : ''}
+
+          ${!isDoctorMode ? `
+            <div class="flex items-center justify-between pt-1 border-t border-stone-50 text-xs">
+              <div class="flex items-center gap-2">
+                <button onclick="toggleVisibility('${item.id}')" 
+                  class="text-[11px] px-2.5 py-1 rounded-xl font-medium border flex items-center gap-1 transition ${item.isPublic ? 'border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100' : 'border-stone-200 text-stone-500 bg-stone-50 hover:bg-stone-100'}">
+                  <span>${item.isPublic ? '👥 匿名公開中' : '🔒 自分のみ'}</span>
+                </button>
+
+                <button onclick="openFollowUpModal('${item.id}')" class="text-[11px] text-brand-700 hover:text-brand-900 underline flex items-center gap-0.5">
+                  <span>✍️</span><span>${item.followUp ? '経過を編集' : '受診・経過を追記'}</span>
+                </button>
+              </div>
+
+              <button onclick="deleteLog('${item.id}')" class="text-stone-300 hover:text-rose-500 text-xs p-1" title="削除">
+                🗑️
+              </button>
+            </div>
+          ` : ''}
+
+        </article>
+      `).join('');
+    }
+
+    // みんなのノート描画
+    function renderCommunity() {
+      const container = document.getElementById('communityList');
+      const logs = getLogs();
+      const publicLogs = logs.filter(log => log.isPublic);
+
+      const filtered = publicLogs.filter(log => {
+        if (currentCommunityFilter === 'all') return true;
+        return log.part.includes(currentCommunityFilter) || currentCommunityFilter.includes(log.part);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-8 text-center text-stone-400 space-y-2 border border-[#ece4d6]">
+            <span class="text-3xl">👥</span>
+            <p class="text-xs font-bold text-stone-600">この部位の公開メモはまだありません</p>
+            <p class="text-[11px]">ご自身のメモを「匿名公開」に設定するとここに並びます。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <article class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center flex-wrap gap-1.5">
+              <span class="font-bold text-stone-800 bg-stone-100 px-2.5 py-1 rounded-xl text-xs flex items-center gap-1">
+                <span>📍</span><span>${escapeHtml(item.part)}</span>
+              </span>
+              ${item.prefecture ? `<span class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-bold">🗾 ${escapeHtml(item.prefecture)}</span>` : ''}
+              <span class="text-[11px] text-stone-400">匿名さんの記録</span>
+            </div>
+            <time class="text-[11px] text-stone-400">
+              ${formatDisplayDateTime(item.datetime)}
+            </time>
+          </div>
+
+          <p class="text-xs text-stone-800 leading-relaxed font-normal">
+            ${escapeHtml(item.content)}
+          </p>
+
+          ${item.followUp ? `
+            <div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-200 text-xs space-y-1">
+              <div class="flex items-center gap-1 font-bold text-amber-900 text-[11px]">
+                <span>🩺</span><span>その後の受診・経過（参考情報）</span>
+              </div>
+              ${item.followUp.hospital ? `<p class="text-stone-700 font-medium text-[11px]">${escapeHtml(item.followUp.hospital)}</p>` : ''}
+              <p class="text-stone-700 text-xs leading-normal">${escapeHtml(item.followUp.note)}</p>
+            </div>
+          ` : ''}
+
+          <div class="flex items-center justify-between pt-1.5 border-t border-stone-100 text-xs">
+            <button onclick="addReaction('${item.id}')" 
+              class="px-3 py-1 rounded-full bg-warm-50 hover:bg-warm-100 text-stone-700 border border-warm-200 flex items-center gap-1.5 transition active:scale-95 text-xs font-medium">
+              <span>🍵</span>
+              <span>わかる・お大事に</span>
+              <span class="font-bold text-brand-700">${item.reactionCount || 0}</span>
+            </button>
+            <span class="text-[10px] text-stone-400">※ 個人の体験メモです</span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function addReaction(id) {
+      const logs = getLogs();
+      const target = logs.find(l => l.id === id);
+      if (target) {
+        target.reactionCount = (target.reactionCount || 0) + 1;
+        saveLogs(logs);
+        showToast('🍵 共感を伝えました');
+      }
+    }
+
+    function toggleVisibility(id) {
+      const logs = getLogs();
+      const target = logs.find(l => l.id === id);
+      if (target) {
+        target.isPublic = !target.isPublic;
+        saveLogs(logs);
+        showToast(target.isPublic ? '👥 匿名で公開しました' : '🔒 非公開にしました');
+      }
+    }
+
+    function deleteLog(id) {
+      if (!confirm('この違和感メモを削除しますか？')) return;
+      let logs = getLogs();
+      logs = logs.filter(l => l.id !== id);
+      saveLogs(logs);
+      showToast('🗑️ 削除しました');
+    }
+
+    function setFilter(part) {
+      currentFilter = part;
+      document.querySelectorAll('#filterContainer .filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === part) {
+          btn.className = "filter-btn px-3 py-1.5 rounded-xl bg-brand-500 text-white font-bold whitespace-nowrap shadow-sm";
+        } else {
+          btn.className = "filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap";
+        }
+      });
+      renderMyLogs();
+    }
+
+    function setCommunityFilter(part) {
+      currentCommunityFilter = part;
+      document.querySelectorAll('#communityFilterContainer .comm-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === part) {
+          btn.className = "comm-filter-btn px-3 py-1.5 rounded-xl bg-warm-amber text-white font-bold whitespace-nowrap shadow-sm";
+        } else {
+          btn.className = "comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap";
+        }
+      });
+      renderCommunity();
+    }
+
+    function toggleDoctorMode() {
+      isDoctorMode = !isDoctorMode;
+      const banner = document.getElementById('doctorBanner');
+      const toggleText = document.getElementById('doctorModeText');
+      const toggleBtn = document.getElementById('doctorModeToggle');
+
+      if (isDoctorMode) {
+        banner.classList.remove('hidden');
+        toggleText.textContent = '通常表示に戻す';
+        toggleBtn.className = "text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-full border border-rose-400 text-rose-700 bg-rose-50 hover:bg-rose-100 transition flex items-center gap-1 shadow-sm";
+        switchTab('myLogs');
+      } else {
+        banner.classList.add('hidden');
+        toggleText.textContent = '医師提示';
+        toggleBtn.className = "text-[11px] sm:text-xs font-bold px-2.5 py-1.5 rounded-full border border-brand-400 text-brand-700 bg-brand-50 hover:bg-brand-100 transition flex items-center gap-1 shadow-sm";
+      }
+      renderMyLogs();
+      renderDoctorVitalsTable();
+      renderDoctorMedSummary();
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabInput').classList.add('hidden');
+      document.getElementById('tabVitals').classList.add('hidden');
+      document.getElementById('tabMyLogs').classList.add('hidden');
+      document.getElementById('tabCommunity').classList.add('hidden');
+
+      const btnInput = document.getElementById('tabBtnInput');
+      const btnVitals = document.getElementById('tabBtnVitals');
+      const btnMyLogs = document.getElementById('tabBtnMyLogs');
+      const btnCommunity = document.getElementById('tabBtnCommunity');
+
+      [btnInput, btnVitals, btnMyLogs, btnCommunity].forEach(b => {
+        b.className = "py-2 text-[11px] sm:text-xs font-medium border-b-2 border-transparent text-stone-500 hover:text-stone-800 flex flex-col items-center justify-center gap-0.5 transition";
+      });
+
+      if (tab === 'input') {
+        document.getElementById('tabInput').classList.remove('hidden');
+        btnInput.className = "py-2 text-[11px] sm:text-xs font-bold border-b-2 border-brand-500 text-brand-700 flex flex-col items-center justify-center gap-0.5 transition";
+      } else if (tab === 'vitals') {
+        document.getElementById('tabVitals').classList.remove('hidden');
+        btnVitals.className = "py-2 text-[11px] sm:text-xs font-bold border-b-2 border-brand-500 text-brand-700 flex flex-col items-center justify-center gap-0.5 transition";
+        renderVitalsTable();
+        renderMedicines();
+      } else if (tab === 'myLogs') {
+        document.getElementById('tabMyLogs').classList.remove('hidden');
+        btnMyLogs.className = "py-2 text-[11px] sm:text-xs font-bold border-b-2 border-brand-500 text-brand-700 flex flex-col items-center justify-center gap-0.5 transition";
+        renderMyLogs();
+        renderDoctorVitalsTable();
+        renderDoctorMedSummary();
+      } else if (tab === 'community') {
+        document.getElementById('tabCommunity').classList.remove('hidden');
+        btnCommunity.className = "py-2 text-[11px] sm:text-xs font-bold border-b-2 border-warm-amber text-stone-800 flex flex-col items-center justify-center gap-0.5 transition";
+        renderCommunity();
+      }
+    }
+
+    function openFollowUpModal(id) {
+      const logs = getLogs();
+      const target = logs.find(l => l.id === id);
+      if (!target) return;
+
+      document.getElementById('followUpItemId').value = id;
+      document.getElementById('followUpHospital').value = target.followUp ? (target.followUp.hospital || '') : '';
+      document.getElementById('followUpNote').value = target.followUp ? (target.followUp.note || '') : '';
+      document.getElementById('followUpMakePublic').checked = target.isPublic;
+
+      document.getElementById('followUpModal').classList.remove('hidden');
+    }
+
+    function closeFollowUpModal() {
+      document.getElementById('followUpModal').classList.add('hidden');
+    }
+
+    function saveFollowUp() {
+      const id = document.getElementById('followUpItemId').value;
+      const hospital = document.getElementById('followUpHospital').value.trim();
+      const note = document.getElementById('followUpNote').value.trim();
+      const makePublic = document.getElementById('followUpMakePublic').checked;
+
+      if (!note && !hospital) {
+        alert('受診状況またはメモを入力してください。');
+        return;
+      }
+
+      const logs = getLogs();
+      const target = logs.find(l => l.id === id);
+      if (target) {
+        target.followUp = {
+          hospital: hospital,
+          note: note,
+          updatedAt: formatForInput(new Date())
+        };
+        target.isPublic = makePublic;
+        saveLogs(logs);
+        closeFollowUpModal();
+        showToast('🩺 経過メモを保存しました');
+      }
+    }
+
+    function openSyncModal() {
+      renderSyncModalContent();
+      document.getElementById('syncModal').classList.remove('hidden');
+    }
+
+    function closeSyncModal() {
+      document.getElementById('syncModal').classList.add('hidden');
+    }
+
+    // Firebase 認証リスナーの初期化
+    function initAuthListener() {
+      if (!auth) {
+        updateSyncStatusUI();
+        return;
+      }
+
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateSyncStatusUI();
+        renderSyncModalContent();
+
+        if (user) {
+          setupFirestoreSync(user.uid);
+        } else {
+          if (firestoreUnsubscribe) {
+            firestoreUnsubscribe();
+            firestoreUnsubscribe = null;
+          }
+        }
+      });
+    }
+
+    // Google ログイン処理
+    async function handleGoogleLogin() {
+      if (!auth) {
+        alert('Firebaseが初期化されていません。ネットワーク接続を確認してください。');
+        return;
+      }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      try {
+        await auth.signInWithPopup(provider);
+        showToast('☁️ Googleアカウントと連携しました');
+      } catch (err) {
+        console.error('Google Sign-In Error:', err);
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+          try {
+            await auth.signInWithRedirect(provider);
+          } catch (redirectErr) {
+            alert('ログインに失敗しました: ' + (redirectErr.message || redirectErr));
+          }
+        } else {
+          alert('ログインに失敗しました: ' + (err.message || err));
+        }
+      }
+    }
+
+    // Google ログアウト処理
+    async function handleGoogleLogout() {
+      if (!auth) return;
+      if (!confirm('Google連携を解除し、ログアウトしますか？\n（端末内のデータはローカルに保持されます）')) return;
+      try {
+        if (firestoreUnsubscribe) {
+          firestoreUnsubscribe();
+          firestoreUnsubscribe = null;
+        }
+        await auth.signOut();
+        currentUser = null;
+        updateSyncStatusUI();
+        renderSyncModalContent();
+        showToast('ローカル保存モードに戻りました');
+      } catch (err) {
+        console.error('Logout error:', err);
+        alert('ログアウト中にエラーが発生しました');
+      }
+    }
+
+    // Firestore リアルタイム同期の開始
+    function setupFirestoreSync(uid) {
+      if (!db) return;
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+      }
+
+      const userDocRef = db.collection('users').doc(uid).collection('karada_data').doc('main');
+
+      // リアルタイムリスナー
+      firestoreUnsubscribe = userDocRef.onSnapshot(doc => {
+        if (doc.exists) {
+          const cloudData = doc.data();
+          if (isSavingToFirestore) return; // 自分が保存した直後のエコーは無視
+
+          let updatedAny = false;
+
+          // 1. 違和感メモの同期とマージ
+          if (cloudData.logs && Array.isArray(cloudData.logs)) {
+            const currentLocal = getLogs();
+            // クラウドとローカルの差分をマージ（ID重複なしで統合）
+            const cloudIds = new Set(cloudData.logs.map(l => l.id));
+            const localOnly = currentLocal.filter(l => !cloudIds.has(l.id));
+
+            if (localOnly.length > 0) {
+              // ローカルにしかない新しい記録があればクラウド側にも統合して保存
+              const mergedLogs = [...cloudData.logs, ...localOnly];
+              localStorage.setItem('karada_memo_logs', JSON.stringify(mergedLogs));
+              syncDataToFirestore('logs', mergedLogs);
+            } else {
+              localStorage.setItem('karada_memo_logs', JSON.stringify(cloudData.logs));
+            }
+            renderMyLogs();
+            renderCommunity();
+            updateBadge();
+            updatedAny = true;
+          }
+
+          // 2. まいにち測定（バイタル）の同期とマージ
+          if (cloudData.vitals && Array.isArray(cloudData.vitals)) {
+            const currentLocal = getVitals();
+            const cloudIds = new Set(cloudData.vitals.map(v => v.id));
+            const localOnly = currentLocal.filter(v => !cloudIds.has(v.id));
+
+            if (localOnly.length > 0) {
+              const mergedVitals = [...cloudData.vitals, ...localOnly];
+              localStorage.setItem('karada_vitals_logs', JSON.stringify(mergedVitals));
+              syncDataToFirestore('vitals', mergedVitals);
+            } else {
+              localStorage.setItem('karada_vitals_logs', JSON.stringify(cloudData.vitals));
+            }
+            renderVitalsTable();
+            renderDoctorVitalsTable();
+            updatedAny = true;
+          }
+
+          // 3. お薬の同期とマージ
+          if (cloudData.medicines && Array.isArray(cloudData.medicines)) {
+            const currentLocal = getMedicines();
+            const cloudIds = new Set(cloudData.medicines.map(m => m.id));
+            const localOnly = currentLocal.filter(m => !cloudIds.has(m.id));
+
+            if (localOnly.length > 0) {
+              const mergedMeds = [...cloudData.medicines, ...localOnly];
+              localStorage.setItem('karada_medicines_logs', JSON.stringify(mergedMeds));
+              syncDataToFirestore('medicines', mergedMeds);
+            } else {
+              localStorage.setItem('karada_medicines_logs', JSON.stringify(cloudData.medicines));
+            }
+            renderMedicines();
+            renderDoctorMedSummary();
+            updatedAny = true;
+          }
+
+          // 4. 地域（都道府県）
+          if (cloudData.prefecture) {
+            localStorage.setItem('karada_user_pref', cloudData.prefecture);
+            const prefSelect = document.getElementById('userPrefecture');
+            if (prefSelect) prefSelect.value = cloudData.prefecture;
+          }
+
+          if (updatedAny) {
+            console.log('✅ Firestore同期完了：クラウドの最新データを反映しました');
+          }
+        } else {
+          // 初回連携時：ローカルの既存データをクラウドに初回保存
+          uploadAllLocalDataToCloud(uid);
+        }
+      }, err => {
+        console.error('Firestore snapshot listener error:', err);
+        if (err.code === 'permission-denied') {
+          showToast('⚠️ Firestoreアクセス権限エラーが発生しました');
+        }
+      });
+    }
+
+    // ローカルデータをすべてFirestoreに初回バックアップ
+    async function uploadAllLocalDataToCloud(uid) {
+      if (!db) return;
+      try {
+        const payload = {
+          logs: getLogs(),
+          vitals: getVitals(),
+          medicines: getMedicines(),
+          prefecture: localStorage.getItem('karada_user_pref') || '',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('users').doc(uid).collection('karada_data').doc('main').set(payload, { merge: true });
+        console.log('Initial local data uploaded to cloud successfully');
+        showToast('☁️ クラウドにデータを初期同期しました');
+      } catch (err) {
+        console.error('Cloud initial upload error:', err);
+        if (err.code === 'permission-denied') {
+          alert('Firestoreのアクセス権限エラー: セキュリティルールをご確認ください');
+        }
+      }
+    }
+
+    // 個別データの変更をFirestoreに同期
+    async function syncDataToFirestore(key, data) {
+      if (!currentUser || !db) return;
+      try {
+        isSavingToFirestore = true;
+        const updateObj = {
+          [key]: data,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('users').doc(currentUser.uid).collection('karada_data').doc('main').set(updateObj, { merge: true });
+      } catch (err) {
+        console.error('Firestore sync error:', err);
+        if (err.code === 'permission-denied') {
+          console.warn('Permission denied syncing data to Firestore');
+        }
+      } finally {
+        setTimeout(() => { isSavingToFirestore = false; }, 800);
+      }
+    }
+
+    function renderSyncModalContent() {
+      const container = document.getElementById('syncAccountStatus');
+      if (currentUser) {
+        const email = currentUser.email || 'Googleアカウント';
+        const photo = currentUser.photoURL;
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                ${photo ? `<img src="${escapeHtml(photo)}" class="w-7 h-7 rounded-full border border-stone-200">` : '<span>🟢</span>'}
+                <div>
+                  <p class="font-bold text-stone-800 text-xs">${escapeHtml(currentUser.displayName || 'Google連携中')}</p>
+                  <p class="text-[11px] text-stone-500">${escapeHtml(email)}</p>
+                </div>
+              </div>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">クラウド同期中</span>
+            </div>
+            <p class="text-[11px] text-stone-500 bg-stone-50 p-2.5 rounded-xl border border-stone-200 leading-relaxed">
+              ✅ スマホとPCのどちらからでも、同じGoogleアカウントでログインするとリアルタイムにノートや測定値が共有されます。
+            </p>
+            <button onclick="handleGoogleLogout()" class="w-full py-2 text-xs text-stone-500 hover:text-stone-700 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 transition">
+              Google連携を解除する（ログアウト）
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <p class="text-stone-700 font-medium">現在は【ブラウザローカル保存】です。</p>
+              <p class="text-[11px] text-stone-500 mt-0.5">Googleアカウントでログインすると、スマホとPCで全く同じデータを自動で共有できるようになります。</p>
+            </div>
+            <button onclick="handleGoogleLogin()" class="w-full py-2.5 bg-white hover:bg-stone-50 border border-stone-300 rounded-xl font-bold text-stone-700 flex items-center justify-center gap-2 shadow-2xs transition active:scale-98">
+              <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Googleアカウントでログインして同期</span>
+            </button>
+            <p class="text-[10px] text-stone-400 text-center">※ ログインしなくてもローカル保存でこのままお使いいただけます。</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateSyncStatusUI() {
+      const icon = document.getElementById('syncIcon');
+      const text = document.getElementById('syncText');
+      const btn = document.getElementById('syncStatusBtn');
+
+      if (currentUser) {
+        icon.textContent = '🟢';
+        text.textContent = '同期中';
+        btn.className = "text-[11px] font-bold px-2 py-1.5 rounded-full border border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-700 transition flex items-center gap-1 shadow-2xs";
+      } else {
+        icon.textContent = '☁️';
+        text.textContent = '同期';
+        btn.className = "text-[11px] font-bold px-2 py-1.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 transition flex items-center gap-1 shadow-2xs";
+      }
+    }
+
+    function updateBadge() {
+      const logs = getLogs();
+      document.getElementById('myLogBadge').textContent = logs.length;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2400);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    // ==========================================
+    // インフォメーション・規約・ポリシー・問い合わせ モーダル管理
+    // ==========================================
+    const INFO_CONTENT = {
+      about: {
+        icon: '🌿',
+        title: 'からだの違和感ノートについて',
+        html: `
+          <div class="space-y-3">
+            <div>
+              <h4 class="font-bold text-stone-800 text-xs mb-1">【40代からの“なんとなくの不調”をサッと残す】</h4>
+              <p class="text-[11px] text-stone-600 leading-relaxed">
+                40代前後になると、「病気とまでは言えないけれど、首や肩の張り、腰の重さ、頭痛、胃腸の張り、疲れやすさ」などの違和感を感じることが増えてきます。本アプリは、そうした日々の小さな違和感を忘れないうちに素早く記録できるセルフログノートです。
+              </p>
+            </div>
+            
+            <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/70 space-y-1">
+              <strong class="text-amber-900 block text-xs flex items-center gap-1">
+                <span>🩺</span><span>あいまいに話すより「見せる」方が確実</span>
+              </strong>
+              <p class="text-[11px] text-amber-800 leading-relaxed">
+                いざ医療機関を受診した際、「いつ頃から、どんな感じでしたか？」と医師に尋ねられても、記憶だけではあいまいにしか伝えられないことが少なくありません。<br>
+                本アプリは、口頭で感覚的に説明するよりも、日々の記録をありのまま医師に見せることで、診察室での確実な意思疎通と的確な診療をサポートすることを前提として設計されています。
+              </p>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-stone-800 text-xs mb-1">【主な機能】</h4>
+              <ul class="list-disc list-inside space-y-1 text-[11px] text-stone-600">
+                <li><strong>違和感メモ:</strong> 部位とオノマトペ感覚タグで3秒記録。過去の日時も柔軟に入力可能。</li>
+                <li><strong>まいにち測定:</strong> 朝・昼・夜の血圧、脈拍、体温、体重や処方薬の服薬チェック。</li>
+                <li><strong>じぶんのカルテ:</strong> 診察室で医師に画面をそのまま見せられる「🩺 医師提示モード」を搭載。</li>
+                <li><strong>みんなのノート:</strong> 都道府県バッジ付きの匿名共有で、同世代の体験談や受診後の経過を参考にできます。</li>
+              </ul>
+            </div>
+          </div>
+        `
+      },
+      disclaimer: {
+        icon: '⚖️',
+        title: '医療に関する免責事項',
+        html: `
+          <div class="space-y-3">
+            <div class="bg-stone-100 p-3 rounded-2xl border border-stone-200 text-[11px] text-stone-700 font-bold">
+              ⚠️ 本アプリは医療機器ではなく、病気の診断・治療・予防を目的としたものではありません。
+            </div>
+            <p><strong>1. 医療行為・診断の否定</strong><br>
+            本アプリは、利用者が自らの体調の違和感や測定値をメモし、医師への相談を補助するためのパーソナルツールです。医学的判断や専門的な診断を行うものではありません。</p>
+
+            <p><strong>2. 専門医療機関への受診推奨</strong><br>
+            身体に強い不調を感じる場合や症状が長引く場合は、本アプリの記録に過度に頼らず、速やかに専門の医師や医療機関を受診してください。</p>
+
+            <p><strong>3. 免責</strong><br>
+            本アプリの利用、または掲載されている利用者投稿（みんなのノート）の内容を参考にされたことによって生じた、いかなるトラブル・不利益・損害についても、当運営者は一切の責任を負いかねます。</p>
+          </div>
+        `
+      },
+      privacy: {
+        icon: '🔒',
+        title: 'プライバシーポリシー & 広告配信について',
+        html: `
+          <div class="space-y-3">
+            <p><strong>1. 広告配信サービスについて</strong><br>
+            当サイトでは、第三者配信事業者（Google AdSense）による広告サービスを利用しています。<br>
+            Google等の第三者事業者は、Cookie（クッキー）を使用し、ユーザーが当サイトや他のウェブサイトにアクセスした際の情報に基づいて適切なパーソナライズ広告を配信することがあります。</p>
+
+            <div class="bg-stone-50 p-3 rounded-2xl border border-stone-200 space-y-1 text-[11px]">
+              <strong class="text-stone-800 block">■ パーソナライズ広告の無効化（オプトアウト）</strong>
+              <p>ユーザーは、<a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline font-bold">Google 広告設定</a> にアクセスしてパーソナライズ広告を無効にできます。</p>
+              <p>また、<a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline font-bold">www.aboutads.info</a> にアクセスすることで、第三者配信事業者のCookieを無効化できます。</p>
+            </div>
+
+            <p><strong>2. 個人情報・健康データの管理と保護</strong><br>
+            利用者が入力した違和感メモ、バイタル数値、お薬情報等の健康データは、利用者の端末内（ブラウザのLocalStorage）およびGoogleアカウントでログインされたご本人のプライベート領域（Firebase Firestore）に暗号化通信を介して安全に保持されます。<br>
+            「みんなのノート」にて利用者本人が意図して匿名公開を選択された場合を除き、個人を特定できる情報や記録データが第三者に無断で公開・提供されることはありません。</p>
+
+            <p><strong>3. お問い合わせ・アクセスログ</strong><br>
+            利便性向上およびサービス運用の目的で、標準的なアクセスログを収集する場合がありますが、個人を特定する情報は含まれません。</p>
+          </div>
+        `
+      },
+      contact: {
+        icon: '📮',
+        title: '運営者情報 & お問い合わせ',
+        html: `
+          <div class="space-y-3">
+            <p><strong>運営者:</strong> yukiyanArt</p>
+            <p><strong>サービス名:</strong> からだの違和感ノート</p>
+            
+            <div class="bg-brand-50 p-3.5 rounded-2xl border border-brand-200 space-y-2">
+              <strong class="text-brand-900 block text-xs">💬 サポート・ご意見・お問い合わせ窓口</strong>
+              <p class="text-[11px] text-brand-800 leading-relaxed">
+                本アプリへのご意見、機能改善のアイデア、不具合のご報告、その他のお問い合わせは、公式サポートポータル <strong>「Feedback & Release Hub」</strong> にて一括管理・対応を行っております。
+              </p>
+              <a href="https://yukiyanart-feedback-hub.web.app/?app_id=karada_note" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center justify-center gap-1.5 w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-xs transition text-xs">
+                <span>📨</span><span>Feedback & Release Hub でお問い合わせ・要望を送る</span>
+              </a>
+              <p class="text-[10px] text-brand-600 text-center">※ 「からだの違和感ノート」が選択された状態で直接投稿画面が開きます</p>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    let currentInfoTab = 'about';
+
+    function openInfoModal(tabKey = 'about') {
+      currentInfoTab = tabKey;
+      switchInfoTab(tabKey);
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function closeInfoModal() {
+      document.getElementById('infoModal').classList.add('hidden');
+    }
+
+    function switchInfoTab(tabKey) {
+      currentInfoTab = tabKey;
+      const data = INFO_CONTENT[tabKey] || INFO_CONTENT.about;
+      document.getElementById('infoModalIcon').textContent = data.icon;
+      document.getElementById('infoModalTitle').textContent = data.title;
+      document.getElementById('infoModalBody').innerHTML = data.html;
+
+      ['about', 'disclaimer', 'privacy', 'contact'].forEach(k => {
+        const btn = document.getElementById(`infoTab-${k}`);
+        if (!btn) return;
+        if (k === tabKey) {
+          btn.className = 'px-3 py-1.5 rounded-xl font-bold bg-brand-500 text-white shadow-2xs whitespace-nowrap';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 whitespace-nowrap';
+        }
+      });
+    }
+
+    // PWA Service Worker 登録 & 即時更新
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=10')
+          .then(reg => {
+            console.log('PWA Service Worker registered:', reg.scope);
+            reg.update();
+          })
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  </script>
+  <!-- yukiyanArt 共通クロスプロモーションSDK -->
+  <script src="https://yukiyanart-feedback-hub.web.app/lib/yukiyanart-promo.js"></script>
+</body>
+</html>

@@ -1,9 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ユーザー個人データ（からだの違和感ノート：違和感メモ、バイタル、お薬）
+    // ユーザー個人データ（本人のみ読み書き）
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // みんなのノート（匿名共有タイムライン）
+    match /public_notes/{noteId} {
+      // 全ユーザー閲覧可能（未ログイン・オフラインキャッシュ含む）
+      allow read: if true;
+
+      // 投稿の新規作成・更新: 必須フィールドの検証と安全制限
+      allow create, update: if request.resource.data.keys().hasAll(['id', 'part', 'datetime', 'content'])
+                            && request.resource.data.content is string
+                            && request.resource.data.content.size() <= 1000
+                            && request.resource.data.part is string;
+
+      // 投稿の削除
+      allow delete: if true;
     }
   }
 }

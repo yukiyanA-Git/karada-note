@@ -1,4 +1,4 @@
-const CACHE_NAME = 'karada-note-v10';
+const CACHE_NAME = 'karada-note-v11';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

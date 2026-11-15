@@ -663,14 +663,19 @@
           </div>
         </div>
 
-        <!-- コミュニティ部位フィルター -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs custom-scroll" id="communityFilterContainer">
-          <button onclick="setCommunityFilter('all')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-warm-amber text-white font-bold whitespace-nowrap shadow-sm" data-filter="all">すべて</button>
-          <button onclick="setCommunityFilter('腰')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="腰">腰痛・腰まわり</button>
-          <button onclick="setCommunityFilter('頭・こめかみ')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="頭・こめかみ">頭痛・重み</button>
-          <button onclick="setCommunityFilter('目・まぶた')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="目・まぶた">目の奥・かすみ</button>
-          <button onclick="setCommunityFilter('胃腸・お腹')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="胃腸・お腹">胃腸・お腹</button>
-          <button onclick="setCommunityFilter('首・肩')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="首・肩">首・肩こり</button>
+        <!-- コミュニティ部位フィルター & 更新ボタン -->
+        <div class="flex items-center justify-between gap-1.5 pb-1 text-xs">
+          <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll flex-1 mr-1" id="communityFilterContainer">
+            <button onclick="setCommunityFilter('all')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-warm-amber text-white font-bold whitespace-nowrap shadow-sm" data-filter="all">すべて</button>
+            <button onclick="setCommunityFilter('腰')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="腰">腰痛・腰まわり</button>
+            <button onclick="setCommunityFilter('頭・こめかみ')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="頭・こめかみ">頭痛・重み</button>
+            <button onclick="setCommunityFilter('目・まぶた')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="目・まぶた">目の奥・かすみ</button>
+            <button onclick="setCommunityFilter('胃腸・お腹')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="胃腸・お腹">胃腸・お腹</button>
+            <button onclick="setCommunityFilter('首・肩')" class="comm-filter-btn px-3 py-1.5 rounded-xl bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 whitespace-nowrap" data-filter="首・肩">首・肩こり</button>
+          </div>
+          <button onclick="refreshCommunity()" title="最新のノートを取得" class="shrink-0 px-2.5 py-1.5 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition active:scale-95">
+            <span>🔄</span><span class="hidden sm:inline font-bold">更新</span>
+          </button>
         </div>
 
         <!-- 匿名タイムラインリスト -->
@@ -1162,6 +1167,12 @@
         });
       }
 
+      // 既存のローカル公開メモがあればクラウド共有にバックグラウンド同期
+      setTimeout(() => {
+        const publicLogs = getLogs().filter(l => l.isPublic);
+        publicLogs.forEach(l => syncPublicNote(l));
+      }, 2000);
+
       const now = new Date();
       document.getElementById('vitalFormDateLabel').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
     });
@@ -1262,6 +1273,54 @@
       textarea.focus();
     }
 
+    // クライアント識別用トークン（自分の匿名投稿判定用）
+    function getClientId() {
+      let id = localStorage.getItem('karada_client_id');
+      if (!id) {
+        id = 'c-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('karada_client_id', id);
+      }
+      return id;
+    }
+
+    // 共有ノート（みんなのノート）をFirestoreに同期
+    async function syncPublicNote(log) {
+      if (!db) return;
+      try {
+        const publicDoc = {
+          id: log.id,
+          part: log.part || '',
+          prefecture: log.prefecture || '',
+          datetime: log.datetime || '',
+          content: log.content || '',
+          severity: log.severity || 1,
+          reactionCount: log.reactionCount || 0,
+          authorToken: log.authorToken || getClientId(),
+          followUp: log.followUp ? {
+            hospital: log.followUp.hospital || '',
+            note: log.followUp.note || '',
+            updatedAt: log.followUp.updatedAt || ''
+          } : null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('public_notes').doc(log.id).set(publicDoc, { merge: true });
+        console.log('✅ 共有ノートをクラウドに反映しました:', log.id);
+      } catch (err) {
+        console.warn('syncPublicNote error:', err);
+      }
+    }
+
+    // 共有ノートをFirestoreから削除
+    async function removePublicNote(id) {
+      if (!db) return;
+      try {
+        await db.collection('public_notes').doc(id).delete();
+        console.log('🗑️ 共有ノートをクラウドから削除しました:', id);
+      } catch (err) {
+        console.warn('removePublicNote error:', err);
+      }
+    }
+
     // ① 違和感メモの保存処理
     function handleSaveMemo(e) {
       e.preventDefault();
@@ -1291,12 +1350,17 @@
         severity: severity,
         isPublic: isPublic,
         reactionCount: 0,
+        authorToken: getClientId(),
         followUp: null
       };
 
       const logs = getLogs();
       logs.unshift(newLog);
       saveLogs(logs);
+
+      if (isPublic) {
+        syncPublicNote(newLog);
+      }
 
       document.getElementById('memoContent').value = '';
       document.getElementById('otherPartInput').value = '';
@@ -1671,15 +1735,108 @@
       `).join('');
     }
 
+    // ==========================================
+    // みんなのノート（匿名共有タイムライン：クラウド連携）
+    // ==========================================
+    let communityNotes = [];
+    let communityUnsubscribe = null;
+    let isCommunityLoading = false;
+
+    // 「みんなのノート」のリアルタイム購読開始
+    function startCommunityListener() {
+      if (!db) {
+        communityNotes = getLogs().filter(l => l.isPublic);
+        renderCommunity();
+        return;
+      }
+      if (communityUnsubscribe) return; // すでに購読中なら再登録しない
+
+      isCommunityLoading = true;
+      renderCommunity();
+
+      try {
+        communityUnsubscribe = db.collection('public_notes')
+          .orderBy('updatedAt', 'desc')
+          .limit(60)
+          .onSnapshot(snapshot => {
+            isCommunityLoading = false;
+            const cloudNotes = [];
+            snapshot.forEach(doc => {
+              cloudNotes.push(doc.data());
+            });
+
+            // ローカルの公開メモ（オフライン作成や未同期分）もマージ
+            const localPublic = getLogs().filter(l => l.isPublic);
+            const cloudIds = new Set(cloudNotes.map(n => n.id));
+            const localOnly = localPublic.filter(l => !cloudIds.has(l.id));
+
+            communityNotes = [...localOnly, ...cloudNotes];
+            // 日時順（新しい順）で並べ替え
+            communityNotes.sort((a, b) => new Date(b.datetime || 0) - new Date(a.datetime || 0));
+
+            renderCommunity();
+          }, err => {
+            console.warn('public_notes onSnapshot error:', err);
+            isCommunityLoading = false;
+            communityNotes = getLogs().filter(l => l.isPublic);
+            renderCommunity();
+          });
+      } catch (err) {
+        console.warn('startCommunityListener exception:', err);
+        isCommunityLoading = false;
+        communityNotes = getLogs().filter(l => l.isPublic);
+        renderCommunity();
+      }
+    }
+
+    // 「みんなのノート」手動更新
+    async function refreshCommunity() {
+      if (!db) {
+        communityNotes = getLogs().filter(l => l.isPublic);
+        renderCommunity();
+        showToast('最新のノートを表示しました');
+        return;
+      }
+      isCommunityLoading = true;
+      renderCommunity();
+      try {
+        const snap = await db.collection('public_notes').orderBy('updatedAt', 'desc').limit(60).get();
+        const cloudNotes = [];
+        snap.forEach(doc => cloudNotes.push(doc.data()));
+        const localPublic = getLogs().filter(l => l.isPublic);
+        const cloudIds = new Set(cloudNotes.map(n => n.id));
+        const localOnly = localPublic.filter(l => !cloudIds.has(l.id));
+        communityNotes = [...localOnly, ...cloudNotes];
+        communityNotes.sort((a, b) => new Date(b.datetime || 0) - new Date(a.datetime || 0));
+        showToast('最新のノートを受信しました');
+      } catch (err) {
+        console.warn('refreshCommunity error:', err);
+        showToast('更新できませんでした（オフライン表示）');
+      } finally {
+        isCommunityLoading = false;
+        renderCommunity();
+      }
+    }
+
     // みんなのノート描画
     function renderCommunity() {
       const container = document.getElementById('communityList');
-      const logs = getLogs();
-      const publicLogs = logs.filter(log => log.isPublic);
+      if (!container) return;
 
-      const filtered = publicLogs.filter(log => {
+      if (isCommunityLoading && communityNotes.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-8 text-center text-stone-400 space-y-2 border border-[#ece4d6]">
+            <div class="inline-block animate-spin text-2xl mb-1">🌿</div>
+            <p class="text-xs font-bold text-stone-600">みんなのノートを受信中...</p>
+          </div>
+        `;
+        return;
+      }
+
+      // フィルター適用
+      const filtered = communityNotes.filter(log => {
         if (currentCommunityFilter === 'all') return true;
-        return log.part.includes(currentCommunityFilter) || currentCommunityFilter.includes(log.part);
+        return (log.part && log.part.includes(currentCommunityFilter)) || currentCommunityFilter.includes(log.part);
       });
 
       if (filtered.length === 0) {
@@ -1687,61 +1844,98 @@
           <div class="bg-white rounded-3xl p-8 text-center text-stone-400 space-y-2 border border-[#ece4d6]">
             <span class="text-3xl">👥</span>
             <p class="text-xs font-bold text-stone-600">この部位の公開メモはまだありません</p>
-            <p class="text-[11px]">ご自身のメモを「匿名公開」に設定するとここに並びます。</p>
+            <p class="text-[11px] text-stone-500">ご自身のメモを「匿名公開」に設定するとここに並びます。</p>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = filtered.map(item => `
-        <article class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
-          <div class="flex items-center justify-between text-xs">
-            <div class="flex items-center flex-wrap gap-1.5">
-              <span class="font-bold text-stone-800 bg-stone-100 px-2.5 py-1 rounded-xl text-xs flex items-center gap-1">
-                <span>📍</span><span>${escapeHtml(item.part)}</span>
-              </span>
-              ${item.prefecture ? `<span class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-bold">🗾 ${escapeHtml(item.prefecture)}</span>` : ''}
-              <span class="text-[11px] text-stone-400">匿名さんの記録</span>
-            </div>
-            <time class="text-[11px] text-stone-400">
-              ${formatDisplayDateTime(item.datetime)}
-            </time>
-          </div>
+      const myClientId = getClientId();
+      const myLocalIds = new Set(getLogs().map(l => l.id));
 
-          <p class="text-xs text-stone-800 leading-relaxed font-normal">
-            ${escapeHtml(item.content)}
-          </p>
+      container.innerHTML = filtered.map(item => {
+        const isMine = (item.authorToken && item.authorToken === myClientId) || myLocalIds.has(item.id);
+        const hasReacted = !!localStorage.getItem('karada_reacted_' + item.id);
 
-          ${item.followUp ? `
-            <div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-200 text-xs space-y-1">
-              <div class="flex items-center gap-1 font-bold text-amber-900 text-[11px]">
-                <span>🩺</span><span>その後の受診・経過（参考情報）</span>
+        return `
+          <article class="bg-white rounded-3xl p-4 shadow-sm border border-[#ece4d6] space-y-2.5">
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center flex-wrap gap-1.5">
+                <span class="font-bold text-stone-800 bg-stone-100 px-2.5 py-1 rounded-xl text-xs flex items-center gap-1">
+                  <span>📍</span><span>${escapeHtml(item.part)}</span>
+                </span>
+                ${item.prefecture ? `<span class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-bold">🗾 ${escapeHtml(item.prefecture)}</span>` : ''}
+                ${isMine ? `<span class="bg-brand-50 border border-brand-200 text-brand-700 text-[10px] px-2 py-0.5 rounded-full font-bold">あなた</span>` : `<span class="text-[11px] text-stone-400">匿名さんの記録</span>`}
               </div>
-              ${item.followUp.hospital ? `<p class="text-stone-700 font-medium text-[11px]">${escapeHtml(item.followUp.hospital)}</p>` : ''}
-              <p class="text-stone-700 text-xs leading-normal">${escapeHtml(item.followUp.note)}</p>
+              <time class="text-[11px] text-stone-400">
+                ${formatDisplayDateTime(item.datetime)}
+              </time>
             </div>
-          ` : ''}
 
-          <div class="flex items-center justify-between pt-1.5 border-t border-stone-100 text-xs">
-            <button onclick="addReaction('${item.id}')" 
-              class="px-3 py-1 rounded-full bg-warm-50 hover:bg-warm-100 text-stone-700 border border-warm-200 flex items-center gap-1.5 transition active:scale-95 text-xs font-medium">
-              <span>🍵</span>
-              <span>わかる・お大事に</span>
-              <span class="font-bold text-brand-700">${item.reactionCount || 0}</span>
-            </button>
-            <span class="text-[10px] text-stone-400">※ 個人の体験メモです</span>
-          </div>
-        </article>
-      `).join('');
+            <p class="text-xs text-stone-800 leading-relaxed font-normal whitespace-pre-wrap">
+              ${escapeHtml(item.content)}
+            </p>
+
+            ${item.followUp ? `
+              <div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-200 text-xs space-y-1">
+                <div class="flex items-center gap-1 font-bold text-amber-900 text-[11px]">
+                  <span>🩺</span><span>その後の受診・経過（参考情報）</span>
+                </div>
+                ${item.followUp.hospital ? `<p class="text-stone-700 font-medium text-[11px]">${escapeHtml(item.followUp.hospital)}</p>` : ''}
+                <p class="text-stone-700 text-xs leading-normal whitespace-pre-wrap">${escapeHtml(item.followUp.note)}</p>
+              </div>
+            ` : ''}
+
+            <div class="flex items-center justify-between pt-1.5 border-t border-stone-100 text-xs">
+              <button onclick="addReaction('${escapeHtml(item.id)}')" 
+                class="px-3 py-1 rounded-full ${hasReacted ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold' : 'bg-warm-50 hover:bg-warm-100 text-stone-700 border border-warm-200 font-medium'} flex items-center gap-1.5 transition active:scale-95 text-xs">
+                <span>🍵</span>
+                <span>${hasReacted ? 'お大事に済' : 'わかる・お大事に'}</span>
+                <span class="font-bold text-brand-700">${item.reactionCount || 0}</span>
+              </button>
+              <span class="text-[10px] text-stone-400">※ 個人の体験メモです</span>
+            </div>
+          </article>
+        `;
+      }).join('');
     }
 
-    function addReaction(id) {
+    async function addReaction(id) {
+      const reactedKey = 'karada_reacted_' + id;
+      if (localStorage.getItem(reactedKey)) {
+        showToast('🍵 すでに共感を伝えています');
+        return;
+      }
+
+      // 重複防止フラグ保存
+      localStorage.setItem(reactedKey, 'true');
+
+      // ローカル配列を即座に更新
+      const targetCommunity = communityNotes.find(n => n.id === id);
+      if (targetCommunity) {
+        targetCommunity.reactionCount = (targetCommunity.reactionCount || 0) + 1;
+      }
+
+      // 本人のローカルメモ内にもあれば更新
       const logs = getLogs();
-      const target = logs.find(l => l.id === id);
-      if (target) {
-        target.reactionCount = (target.reactionCount || 0) + 1;
-        saveLogs(logs);
-        showToast('🍵 共感を伝えました');
+      const targetLocal = logs.find(l => l.id === id);
+      if (targetLocal) {
+        targetLocal.reactionCount = (targetLocal.reactionCount || 0) + 1;
+        saveLogs(logs, false);
+      }
+
+      renderCommunity();
+      showToast('🍵 共感を伝えました');
+
+      // Firestore の reactionCount をインクリメント
+      if (db) {
+        try {
+          await db.collection('public_notes').doc(id).update({
+            reactionCount: firebase.firestore.FieldValue.increment(1)
+          });
+        } catch (err) {
+          console.warn('Firestore reaction error:', err);
+        }
       }
     }
 
@@ -1751,6 +1945,11 @@
       if (target) {
         target.isPublic = !target.isPublic;
         saveLogs(logs);
+        if (target.isPublic) {
+          syncPublicNote(target);
+        } else {
+          removePublicNote(target.id);
+        }
         showToast(target.isPublic ? '👥 匿名で公開しました' : '🔒 非公開にしました');
       }
     }
@@ -1760,6 +1959,7 @@
       let logs = getLogs();
       logs = logs.filter(l => l.id !== id);
       saveLogs(logs);
+      removePublicNote(id);
       showToast('🗑️ 削除しました');
     }
 
@@ -1840,7 +2040,7 @@
       } else if (tab === 'community') {
         document.getElementById('tabCommunity').classList.remove('hidden');
         btnCommunity.className = "py-2 text-[11px] sm:text-xs font-bold border-b-2 border-warm-amber text-stone-800 flex flex-col items-center justify-center gap-0.5 transition";
-        renderCommunity();
+        startCommunityListener();
       }
     }
 
@@ -1882,6 +2082,13 @@
         };
         target.isPublic = makePublic;
         saveLogs(logs);
+
+        if (makePublic) {
+          syncPublicNote(target);
+        } else {
+          removePublicNote(target.id);
+        }
+
         closeFollowUpModal();
         showToast('🩺 経過メモを保存しました');
       }
@@ -2325,7 +2532,7 @@
     // PWA Service Worker 登録 & 即時更新
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=10')
+        navigator.serviceWorker.register('./sw.js?v=11')
           .then(reg => {
             console.log('PWA Service Worker registered:', reg.scope);
             reg.update();
